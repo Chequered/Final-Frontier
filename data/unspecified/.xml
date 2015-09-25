@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ArrayOfProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Property>
+    <Key>testString</Key>
+    <Value xsi:type="xsd:string">Hello World</Value>
+  </Property>
+  <Property>
+    <Key>testBool</Key>
+    <Value xsi:type="xsd:boolean">true</Value>
+  </Property>
+  <Property>
+    <Key>testInt</Key>
+    <Value xsi:type="xsd:int">15</Value>
+  </Property>
+  <Property>
+    <Key>testFloat</Key>
+    <Value xsi:type="xsd:float">5.25</Value>
+  </Property>
+</ArrayOfProperty>

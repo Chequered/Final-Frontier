@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ArrayOfProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Property>
+    <Key>seed</Key>
+    <Value xsi:type="xsd:float">15593.19</Value>
+  </Property>
+  <Property>
+    <Key>name</Key>
+    <Value xsi:type="xsd:string">Rock - 15593</Value>
+  </Property>
+  <Property>
+    <Key>type</Key>
+    <Value xsi:type="xsd:string">Dust</Value>
+  </Property>
+  <Property>
+    <Key>x</Key>
+    <Value xsi:type="xsd:int">124</Value>
+  </Property>
+  <Property>
+    <Key>y</Key>
+    <Value xsi:type="xsd:int">124</Value>
+  </Property>
+  <Property>
+    <Key>temperature</Key>
+    <Value xsi:type="xsd:float">42.8812752</Value>
+  </Property>
+  <Property>
+    <Key>oxygenLevel</Key>
+    <Value xsi:type="xsd:float">0.7796595</Value>
+  </Property>
+  <Property>
+    <Key>containsFlora</Key>
+    <Value xsi:type="xsd:boolean">true</Value>
+  </Property>
+</ArrayOfProperty>
