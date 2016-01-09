@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<ArrayOfProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Property>
+    <Key>buildingType</Key>
+    <Value xsi:type="xsd:string">production</Value>
+  </Property>
+  <Property>
+    <Key>buildMode</Key>
+    <Value xsi:type="xsd:string">construction</Value>
+  </Property>
+  <Property>
+    <Key>productionRequiredItems</Key>
+    <Value xsi:type="xsd:string">power:2/water:3/oxygen:2</Value>
+  </Property>
+  <Property>
+    <Key>produces</Key>
+    <Value xsi:type="xsd:string">wheat:30</Value>
+  </Property>
+  <Property>
+    <Key>itemContainerSlots</Key>
+    <Value xsi:type="xsd:int">8</Value>
+  </Property>
+  
+</ArrayOfProperty>

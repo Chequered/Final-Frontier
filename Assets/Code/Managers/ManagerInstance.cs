@@ -1,41 +1,56 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
+using FinalFrontier.Serialization;
+using FinalFrontier.Managers.Base;
+
 namespace FinalFrontier
 {
     namespace Managers
     {
         public static class ManagerInstance
         {
-            private static List<ManagerBase> _managers = new List<ManagerBase>();
+            private static List<ManagerBase> m_managers = new List<ManagerBase>();
 
             //Start
             public static void OnStart()
             {
-                for (int i = 0; i < _managers.Count; i++)
+                if(GameManager.saveDataContainer.state == SaveDataState.New)
+                    GameManager.gameState = GameState.StartingNew;
+                else
+                    GameManager.gameState = GameState.StartingSave;
+
+                for (int i = 0; i < m_managers.Count; i++)
                 {
-                    _managers[i].OnStart();
+                    m_managers[i].OnStart();
                 }
+                GameManager.gameState = GameState.Playing;
+
+                //Savegame save = new Savegame();
+                //save.Save();
             }
 
             private static void AddManagers()
             {
-                Add(new GameManager());
+                Add(new InputManager());
                 Add(new UIManager());
-                Add(new PropertiesManager());
                 Add(new TerrainManager());
                 Add(new EntityManager());
+                Add(new GameManager());
+                Add(new BuildManager());
+                Add(new SimulationManager());
+                Add(new ItemManager());
             }
 
             //Methods
             public static MT Get<MT>()
             {
                 ManagerBase m = default(ManagerBase);
-                for (int i = 0; i < _managers.Count; i++)
+                for (int i = 0; i < m_managers.Count; i++)
                 {
-                    if (_managers[i].GetType() == typeof(MT))
+                    if (m_managers[i].GetType() == typeof(MT))
                     {
-                        m = _managers[i];
+                        m = m_managers[i];
                         break;
                     }
                 }
@@ -44,41 +59,38 @@ namespace FinalFrontier
 
             public static ManagerBase Add(ManagerBase manager)
             {
-                _managers.Add(manager);
+                m_managers.Add(manager);
                 return manager;
             }
 
             //Updates
             public static void OnTick()
             {
-                for (int i = 0; i < _managers.Count; i++)
+                for (int i = 0; i < m_managers.Count; i++)
                 {
-                    _managers[i].OnTick();
+                    m_managers[i].OnTick();
                 }
             }
 
             public static void OnUpdate()
             {
-                for (int i = 0; i < _managers.Count; i++)
+                for (int i = 0; i < m_managers.Count; i++)
                 {
-                    _managers[i].OnUpdate();
+                    m_managers[i].OnUpdate();
                 }
             }
 
             public static void OnSave()
             {
-                for (int i = 0; i < _managers.Count; i++)
-                {
-                    _managers[i].OnSave();
-                }
+
             }
 
             public static void OnLoad()
             {
                 AddManagers();
-                for (int i = 0; i < _managers.Count; i++)
+                for (int i = 0; i < m_managers.Count; i++)
                 {
-                    _managers[i].OnLoad();
+                    m_managers[i].OnLoad();
                 }
             }
         }

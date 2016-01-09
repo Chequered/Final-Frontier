@@ -1,5 +1,11 @@
-﻿using UnityEngine;
+﻿using System;
 using System.Collections.Generic;
+using System.IO;
+
+using UnityEngine;
+
+using FinalFrontier.Serialization;
+using FinalFrontier.Managers.Base;
 
 namespace FinalFrontier
 {
@@ -7,11 +13,11 @@ namespace FinalFrontier
     {
         public class GameManager : ManagerBase
         {
-            private GameState _gameState;
-            
+            private static GameState m_gameState = GameState.Booting;
+
             public override void OnStart()
             {
-                
+                ManagerInstance.Get<InputManager>().AddEventListener(InputPressType.Up, KeyCode.F8, Save);
             }
 
             public override void OnTick()
@@ -20,11 +26,6 @@ namespace FinalFrontier
             }
 
             public override void OnUpdate()
-            {
-
-            }
-
-            public override void OnSave()
             {
 
             }
@@ -38,21 +39,47 @@ namespace FinalFrontier
             {
 
             }
-
-            //---------- Getters / Setters ----------\\
-
-            public GameState gameState
+            
+            //save current game
+            public void Save()
             {
-                get
+                if (saveDataContainer.saveGame != null)
+                    saveDataContainer.saveGame.Save(Main.instance.saveGameName);
+                else
                 {
-                    return _gameState;
-                }
-                set
-                {
-                    _gameState = value;
+                    Savegame save = new Savegame();
+                    save.Save();
                 }
             }
 
+            public void Load()
+            {
+
+            }
+
+            public static GameState gameState
+            {
+                get
+                {
+                    return m_gameState;
+                }
+                set
+                {
+                    Debug.LogWarning("Gamestate change, from: " + m_gameState + " to " + value);
+                    m_gameState = value;
+                }
+            }
+
+            public static SaveDataContainer saveDataContainer
+            {
+                get
+                {
+                    if (GameObject.Find("SaveData") == null)
+                        new GameObject("SaveData").AddComponent<SaveDataContainer>();
+
+                    return GameObject.Find("SaveData").GetComponent<SaveDataContainer>();
+                }
+            }
         }
     }
 }

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<ArrayOfProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Property>
+    <Key>type</Key>
+    <Value xsi:type="xsd:string">building</Value>
+  </Property>
+  <Property>
+    <Key>identity</Key>
+    <Value xsi:type="xsd:string">house_pod</Value>
+  </Property>
+  <Property>
+    <Key>displayName</Key>
+    <Value xsi:type="xsd:string">Housing Pod</Value>
+  </Property>
+  <Property>
+    <Key>description</Key>
+    <Value xsi:type="xsd:string">Your colony's standard housing, can be dropped from outer space.</Value>
+  </Property>
+  <Property>
+    <Key>traversable</Key>
+    <Value xsi:type="xsd:boolean">false</Value>
+  </Property>
+  <Property>
+    <Key>tileWidth</Key>
+    <Value xsi:type="xsd:int">2</Value>
+  </Property>
+  <Property>
+    <Key>tileHeight</Key>
+    <Value xsi:type="xsd:int">2</Value>
+  </Property>
+  <!-- GRAPHICS -->
+  <Property>
+    <Key>spriteVariants</Key>
+    <Value xsi:type="xsd:int">1</Value>
+  </Property>
+</ArrayOfProperty>

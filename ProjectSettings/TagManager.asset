@@ -5,6 +5,7 @@ TagManager:
   serializedVersion: 2
   tags:
   - PropertyInspector
+  - UI
   layers:
   - Default
   - TransparentFX
@@ -15,7 +16,7 @@ TagManager:
   - 
   - 
   - Terrain
-  - 
+  - Orthographic
   - 
   - 
   - 

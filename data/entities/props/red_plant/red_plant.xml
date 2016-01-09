@@ -44,4 +44,12 @@
     <Key>maxPerlinValue</Key>
     <Value xsi:type="xsd:float">0.30</Value>
   </Property>
+  <Property>
+    <Key>tileWidth</Key>
+    <Value xsi:type="xsd:int">1</Value>
+  </Property>
+  <Property>
+    <Key>tileHeight</Key>
+    <Value xsi:type="xsd:int">1</Value>
+  </Property>
 </ArrayOfProperty>

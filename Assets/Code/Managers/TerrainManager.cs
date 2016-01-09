@@ -11,6 +11,7 @@ using FinalFrontier.Terrain;
 using FinalFrontier.Terrain.Generation;
 using FinalFrontier.Serialization;
 using FinalFrontier.Graphics;
+using FinalFrontier.Managers.Base;
 
 namespace FinalFrontier
 {
@@ -22,33 +23,41 @@ namespace FinalFrontier
             public const int WORLD_WIDTH = 8;
 
             //static vars
-            private TerrainOperationHandler _operations;
+            private TerrainOperationHandler m_operations;
 
             //Graphics & cache
-            private List<TerrainTileCache> _tileCache;
-            private List<TerrainTileGraphicsCached> _tileGraphicsCache;
-            private List<TerrainChunk> _terrainChunkDrawQueue;
+            private List<TerrainTileCache> m_tileCache;
+            private List<TerrainTileGraphicsCached> m_tileGraphicsCache;
+            private List<TerrainChunk> m_terrainChunkDrawQueue;
 
             //Datamaps
-            private TerrainChunk[,] _terrainChunks;
-            private TerrainTile[,] _terrainTiles;
+            private TerrainChunk[,] m_terrainChunks;
+            private TerrainTile[,] m_terrainTiles;
+
+            //Info
+            private TerrainGenerationWorldInfo m_worldInfo;
+            private TerrainGenerationTerrainInfo m_terrainInfo;
 
             public override void OnStart()
             {
-                //Create our datamaps
-                _terrainChunks = new TerrainChunk[WORLD_WIDTH, WORLD_WIDTH];
-                _terrainTiles = new TerrainTile[WORLD_WIDTH * TerrainChunk.SIZE, WORLD_WIDTH * TerrainChunk.SIZE];
-
                 BuildTerrain();
-                GenerateTerrain();
+
+                if (GameManager.gameState == GameState.StartingNew)
+                    GenerateTerrain();
+                else
+                    LoadTerrain();
+
                 GenerateNeighborInfo();
             }
 
             private void BuildTerrain()
             {
                 //Create a terrainBuilder and build the terrain
-                GameObject world = new GameObject("World");
-                _operations = world.AddComponent<TerrainOperationHandler>();
+                GameObject world = GameObject.Find("World");
+                if (world == null)
+                    world = new GameObject("World");
+
+                m_operations = world.AddComponent<TerrainOperationHandler>();
 
                 GameObject terrain = new GameObject("Terrain");//Parent gameobject of all terrain objects
                 terrain.transform.parent = world.transform;
@@ -67,12 +76,12 @@ namespace FinalFrontier
                         terrainChunk.transform.name += " [" + cX + ", " + cY + "]";
 
                         //Set the chunks data and start it
-                        _terrainChunks[cX, cY] = new TerrainChunk(cX, cY);
-                        _terrainChunks[cX, cY].gameObject = terrainChunk;
-                        _terrainChunks[cX, cY].OnStart();
+                        m_terrainChunks[cX, cY] = new TerrainChunk(cX, cY);
+                        m_terrainChunks[cX, cY].gameObject = terrainChunk;
+                        m_terrainChunks[cX, cY].OnStart();
 
                         //Get the void terrainTile
-                        TerrainTileCache voidTile = ManagerInstance.Get<TerrainManager>().FindFromCache("void");
+                        TerrainTileCache voidTile = ManagerInstance.Get<TerrainManager>().FindTerrainTileCache("void");
 
                         for (int tX = 0; tX < TerrainChunk.SIZE; tX++)
                         {
@@ -80,31 +89,36 @@ namespace FinalFrontier
                             {
 
                                 //Set the Tile info and start it
-                                _terrainTiles[cX * TerrainChunk.SIZE + tX, cY * TerrainChunk.SIZE + tY] = new TerrainTile(tX, tY, _terrainChunks[cX, cY]);
-                                _terrainTiles[cX * TerrainChunk.SIZE + tX, cY * TerrainChunk.SIZE + tY].properties.SetAll(voidTile.properties);
-                                _terrainTiles[cX * TerrainChunk.SIZE + tX, cY * TerrainChunk.SIZE + tY].OnStart();
+                                TerrainTile tile = m_terrainTiles[cX * TerrainChunk.SIZE + tX, cY * TerrainChunk.SIZE + tY] = new TerrainTile(tX, tY, m_terrainChunks[cX, cY]);
+                                tile.properties.SetAll(voidTile.properties);
+                                tile.OnStart();
 
-                                _terrainChunks[cX, cY].SetTerrainTile(_terrainTiles[cX * TerrainChunk.SIZE + tX, cY * TerrainChunk.SIZE + tY], tX, tY);
+                                m_terrainChunks[cX, cY].SetTerrainTile(tile, tX, tY);
                             }
                         }
 
-                        _terrainChunks[cX, cY].SetupGraphics();
-                        _terrainChunks[cX, cY].InitialDraw();
+                        m_terrainChunks[cX, cY].SetupGraphics();
+                        m_terrainChunks[cX, cY].InitialDraw();
                     }
                 }
             }
 
-            private TerrainGenerationWorldInfo _worldInfo;
-            private TerrainGenerationTerrainInfo _terrainInfo;
             private void GenerateTerrain()
             {
-                if(_worldInfo == null)
-                {
-                    _worldInfo = new TerrainGenerationWorldInfo();
-                    _worldInfo.GenerateTerrainProperties(UnityEngine.Random.Range(TerrainGenerationWorldInfo.MIN_SEED_VALUE, TerrainGenerationWorldInfo.MAX_SEED_VALUE));
-                }
-                _terrainInfo = new TerrainGenerationTerrainInfo(_worldInfo);
-                _terrainInfo.GenerateTerrain(_terrainTiles);
+                m_worldInfo = new TerrainGenerationWorldInfo();
+                m_worldInfo.GenerateTerrainProperties(GameManager.saveDataContainer.newGameSeed);
+
+                m_terrainInfo = new TerrainGenerationTerrainInfo(m_worldInfo);
+                m_terrainInfo.GenerateTerrain(m_terrainTiles);
+            }
+
+            private void LoadTerrain()
+            {
+                m_worldInfo = new TerrainGenerationWorldInfo();
+                m_worldInfo.properties = GameManager.saveDataContainer.saveGame.worldProperties;
+
+                m_terrainInfo = new TerrainGenerationTerrainInfo(m_worldInfo);
+                m_terrainInfo.LoadTerrain(m_terrainTiles);
             }
 
             private void GenerateNeighborInfo()
@@ -114,7 +128,7 @@ namespace FinalFrontier
                 {
                     for (int y = 0; y < TerrainManager.WORLD_WIDTH * TerrainChunk.SIZE; y++)
                     {
-                        TerrainTile tile = _terrainTiles[x, y];
+                        TerrainTile tile = m_terrainTiles[x, y];
                         tile.neighborInfo.identity = tile.identity;
                         tile.neighborInfo.x = x;
                         tile.neighborInfo.y = y;
@@ -124,8 +138,8 @@ namespace FinalFrontier
 
             public void SetWorldProperties(Properties properties)
             {
-                if (_worldInfo != null)
-                    _worldInfo.properties.SetAll(properties);
+                if (m_worldInfo != null)
+                    m_worldInfo.properties.SetAll(properties);
             }
 
             //Logic
@@ -136,37 +150,18 @@ namespace FinalFrontier
 
             public override void OnUpdate()
             {
-                if(Input.GetKeyUp(KeyCode.F2))
-                {
-                    GameObject g = GameObject.Find("Perlin");
-
-                    if (g == null)
-                    {
-                        g = new GameObject("Perlin");
-                        g.AddComponent<SpriteRenderer>().sprite = _terrainInfo.perlinTexture;
-                        g.transform.position = new Vector3(-15, 2, -2);
-                        g.transform.localScale = new Vector2(35, 35);
-                    }
-                    else
-                    {
-                        if (g.activeInHierarchy)
-                            g.SetActive(false);
-                        else
-                            g.SetActive(true);
-                    }
-                }
-            }
-
-            public override void OnSave()
-            {
 
             }
 
             public override void OnLoad()
             {
                 LoadTiles();
-                _terrainChunkDrawQueue = new List<TerrainChunk>();
-                _tileGraphicsCache = new List<TerrainTileGraphicsCached>();
+                m_terrainChunkDrawQueue = new List<TerrainChunk>();
+                m_tileGraphicsCache = new List<TerrainTileGraphicsCached>();
+
+                //Create our datamaps
+                m_terrainChunks = new TerrainChunk[WORLD_WIDTH, WORLD_WIDTH];
+                m_terrainTiles = new TerrainTile[WORLD_WIDTH * TerrainChunk.SIZE, WORLD_WIDTH * TerrainChunk.SIZE];
             }
 
             public override void OnExit()
@@ -177,7 +172,7 @@ namespace FinalFrontier
             //Data
             private void LoadTiles()
             {
-                _tileCache = new List<TerrainTileCache>();
+                m_tileCache = new List<TerrainTileCache>();
 
                 //Find al terrainTile Property files
                 string[] folders = Directory.GetDirectories(Properties.dataRootPath + "tiles");
@@ -195,7 +190,7 @@ namespace FinalFrontier
                     //Load the graphics
                     TerrainTileGraphics graphics = new TerrainTileGraphics();
                     graphics.variants = p.Get<int>("spriteVariants");
-                    graphics.LoadFrom(folders[i] + "/" + folders[i]);
+                    graphics.LoadFrom(folders[i] + "/" + folders[i], p);
                     graphics.GeneratePrimaryColor();
 
                     //Create the cache and assign its data
@@ -205,35 +200,21 @@ namespace FinalFrontier
 
                     //Keep track of it
                     if (tile != null)
-                        _tileCache.Add(tile);
+                        m_tileCache.Add(tile);
                 }
-            }
-
-            public TerrainTileCache FindFromCache(string identity)
-            {
-                TerrainTileCache result = null;
-                for (int i = 0; i < _tileCache.Count; i++)
-                {
-                    if(_tileCache[i].properties.Get<string>("identity") == identity)
-                    {
-                        //Found our result
-                        return _tileCache[i];
-                    }
-                }
-                return result;
             }
 
             public TerrainTileCache[] AvaivableTilesForPlanetType(string planetType, string tileType)
             {
                 List<TerrainTileCache> result = new List<TerrainTileCache>();
 
-                for (int i = 0; i < _tileCache.Count; i++)
+                for (int i = 0; i < m_tileCache.Count; i++)
                 {
-                    if (_tileCache[i].properties.Get<string>("tileType") != tileType)
+                    if (m_tileCache[i].properties.Get<string>("tileType") != tileType)
                         continue;
-                    string tilePlanetType = _tileCache[i].properties.Get<string>("planetType");
+                    string tilePlanetType = m_tileCache[i].properties.Get<string>("planetType");
                     if (tilePlanetType == planetType || tilePlanetType == "any")
-                        result.Add(_tileCache[i]);
+                        result.Add(m_tileCache[i]);
                 }
 
                 return result.ToArray();
@@ -241,29 +222,29 @@ namespace FinalFrontier
 
             public void InspectWorldProperties()
             {
-                ManagerInstance.Get<UIManager>().InspectPropeties(_worldInfo.properties);
+                ManagerInstance.Get<UIManager>().propertyInspector.InspectProperties(m_worldInfo.properties);
             }
 
             //Graphics
             public void CycleDrawQueue()
             {
                 //Go through the drawQueue
-                for (int i = 0; i < _terrainChunkDrawQueue.Count; i++)
+                for (int i = 0; i < m_terrainChunkDrawQueue.Count; i++)
                 {
-                    _operations.Draw(_terrainChunkDrawQueue[i]);   
+                    m_operations.Draw(m_terrainChunkDrawQueue[i]);   
                 }
                 //Clear the drawQueue
-                _terrainChunkDrawQueue.Clear();
+                m_terrainChunkDrawQueue.Clear();
             }
 
             public Color[] GetCachedTexture(TerrainTile tile)
             {
                 //check for cached version
-                for (int i = 0; i < _tileGraphicsCache.Count; i++)
+                for (int i = 0; i < m_tileGraphicsCache.Count; i++)
                 {
-                    if (_tileGraphicsCache[i].identity == tile.identity)
+                    if (m_tileGraphicsCache[i].identity == tile.identity)
                     {
-                        return _tileGraphicsCache[i].textureData;
+                        return m_tileGraphicsCache[i].textureData;
                     }
                 }
                 return null;
@@ -272,13 +253,13 @@ namespace FinalFrontier
             public void AddChunkToDrawQueue(TerrainChunk chunk)
             {
                 //Add the chunk to the drawQueue if it's not present yet.
-                if (!_terrainChunkDrawQueue.Contains(chunk))
-                    _terrainChunkDrawQueue.Add(chunk);
+                if (!m_terrainChunkDrawQueue.Contains(chunk))
+                    m_terrainChunkDrawQueue.Add(chunk);
             }
 
             public void CacheTexture(TerrainTileGraphicsCached graphicsCache)
             {
-                _tileGraphicsCache.Add(graphicsCache);
+                m_tileGraphicsCache.Add(graphicsCache);
             }
 
             //Shapes
@@ -296,7 +277,7 @@ namespace FinalFrontier
                     for (int y = -height; y < height; y++)
                     {
                         if (x + ox >= 0 && x + ox < size && y + oy >= 0 && y + oy < size)
-                            _terrainTiles[x + ox, y + oy].SetTo(tile);
+                            m_terrainTiles[x + ox, y + oy].SetTo(tile);
                     }
                 }
             }
@@ -331,11 +312,21 @@ namespace FinalFrontier
                 }
             }
 
+            public TerrainTileCache FindTerrainTileCache(string identity)
+            {
+                for (int i = 0; i < m_tileCache.Count; i++)
+                {
+                    if (m_tileCache[i].properties.Get<string>("identity") == identity)
+                        return m_tileCache[i];
+                }
+                return null;
+            }
+
             public TerrainTile[,] tiles
             {
                 get
                 {
-                    return _terrainTiles;
+                    return m_terrainTiles;
                 }
             }
 
@@ -343,8 +334,42 @@ namespace FinalFrontier
             {
                 get
                 {
-                    return _worldInfo.properties;
+                    return m_worldInfo.properties;
                 }
+            }
+
+            public Properties[] terrainTilesProperties
+            {
+                get
+                {
+                    Properties[] properties = new Properties[(WORLD_WIDTH * TerrainChunk.SIZE) * (WORLD_WIDTH * TerrainChunk.SIZE)];
+
+                    for (int x = 0; x < WORLD_WIDTH * TerrainChunk.SIZE; x++)
+                    {
+                        for (int y = 0; y < WORLD_WIDTH * TerrainChunk.SIZE; y++)
+                        {
+                            properties[y * (WORLD_WIDTH * TerrainChunk.SIZE) + x] = tiles[x, y].properties;
+                        }
+                    }
+
+                    return properties;
+                }
+            }
+
+            public bool isInPlanetsShape(int x, int y)
+            {
+                return m_terrainInfo.IsInPlanetsShape(x, y);
+            }
+
+            public static bool isLocationValid(int x, int y)
+            {
+                if(x >= 0 && x < worldSize)
+                {
+                    if(y >= 0 && y < worldSize)
+                        return true;
+                    return false;
+                }
+                return false;
             }
         }
     }

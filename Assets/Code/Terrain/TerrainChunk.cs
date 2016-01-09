@@ -15,10 +15,10 @@ namespace FinalFrontier
 
             //References
             public GameObject gameObject;
-            private TerrainTile[,] _tiles;
+            private TerrainTile[,] m_tiles;
 
             //Graphics
-            private List<TerrainTile> _terrainTileDrawQueue;
+            private List<TerrainTile> m_terrainTileDrawQueue;
 
             //active vars
             public int x, y;
@@ -31,7 +31,7 @@ namespace FinalFrontier
 
             public void OnStart()
             {
-                _tiles = new TerrainTile[SIZE, SIZE];
+                m_tiles = new TerrainTile[SIZE, SIZE];
 
                 //Link the collision
                 gameObject.GetComponent<TerrainChunkCollision>().SetTerrainChunk(this);
@@ -43,7 +43,7 @@ namespace FinalFrontier
                 {
                     for (int y = 0; y < SIZE; y++)
                     {
-                        _tiles[x, y].OnTick();
+                        m_tiles[x, y].OnTick();
                     }
                 }
             }
@@ -54,7 +54,7 @@ namespace FinalFrontier
                 {
                     for (int y = 0; y < SIZE; y++)
                     {
-                        _tiles[x, y].OnUpdate();
+                        m_tiles[x, y].OnUpdate();
                     }
                 }
             }
@@ -66,7 +66,7 @@ namespace FinalFrontier
                 {
                     for (int y = 0; y < SIZE; y++)
                     {
-                        _tiles[tX, tY] = tile;
+                        m_tiles[tX, tY] = tile;
                     }
                 }
             }
@@ -74,14 +74,14 @@ namespace FinalFrontier
             //Graphics
             public void SetupGraphics()
             {
-                Texture2D tex = new Texture2D(SIZE * TerrainTileGraphics.TEXTURE_RESOLUTION, SIZE * TerrainTileGraphics.TEXTURE_RESOLUTION);
+                Texture2D tex = new Texture2D(SIZE * TerrainTileGraphics.TILE_TEXTURE_RESOLUTION, SIZE * TerrainTileGraphics.TILE_TEXTURE_RESOLUTION);
                 tex.filterMode = FilterMode.Point;
                 tex.wrapMode = TextureWrapMode.Clamp;
 
                 gameObject.GetComponent<Renderer>().sharedMaterial = new Material(gameObject.GetComponent<Renderer>().material);
                 gameObject.GetComponent<Renderer>().sharedMaterial.mainTexture = tex;
 
-                _terrainTileDrawQueue = new List<TerrainTile>();
+                m_terrainTileDrawQueue = new List<TerrainTile>();
             }
 
             public void SetTerrainTexture(Texture2D texture)
@@ -91,21 +91,21 @@ namespace FinalFrontier
 
             public void AddTileToDrawQueue(TerrainTile tile)
             {
-                if(!_terrainTileDrawQueue.Contains(tile))
+                if(!m_terrainTileDrawQueue.Contains(tile))
                 {
-                    _terrainTileDrawQueue.Add(tile);
+                    m_terrainTileDrawQueue.Add(tile);
                 }
                 ManagerInstance.Get<TerrainManager>().AddChunkToDrawQueue(this);
             }
 
             public void InitialDraw()
             {
-                _terrainTileDrawQueue.Clear();
+                m_terrainTileDrawQueue.Clear();
                 for (int x = 0; x < SIZE; x++)
                 {
                     for (int y = 0; y < SIZE; y++)
                     {
-                        _terrainTileDrawQueue.Add(_tiles[x, y]);
+                        m_terrainTileDrawQueue.Add(m_tiles[x, y]);
                     }
                 }
                 ManagerInstance.Get<TerrainManager>().AddChunkToDrawQueue(this);
@@ -124,7 +124,7 @@ namespace FinalFrontier
             {
                 get
                 {
-                    return _terrainTileDrawQueue;
+                    return m_terrainTileDrawQueue;
                 }
             }
 
@@ -132,7 +132,7 @@ namespace FinalFrontier
             {
                 get
                 {
-                    return _tiles;
+                    return m_tiles;
                 }
             }
         }

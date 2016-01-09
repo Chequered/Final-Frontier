@@ -1,4 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using UnityEngine;
+
+using System.Collections.Generic;
+
+using FinalFrontier.Entities;
 
 namespace FinalFrontier
 {
@@ -6,10 +10,10 @@ namespace FinalFrontier
     {
         public class ActorGraphics : GraphicsBase
         {
-            public ActorGraphics()
+            public ActorGraphics(Entity entity) : base(entity)
             {
-                _textureData = new List<UnityEngine.Color[]>();
-                folder = "entities/actors";
+                p_textureData = new List<UnityEngine.Color[]>();
+                p_folder = "entities/actors";
             }
         }
     }

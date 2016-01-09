@@ -6,6 +6,7 @@ using UnityEngine;
 using FinalFrontier.Serialization;
 using FinalFrontier.Managers;
 using FinalFrontier.Graphics;
+using FinalFrontier.UI;
 
 namespace FinalFrontier
 {
@@ -33,6 +34,12 @@ namespace FinalFrontier
             public const string Explode = "explode";
         }
 
+        public enum EntityPositionStatus
+        {
+            InAir,
+            OnGround
+        }
+
         //Classes
         //GameObjects can only be destroyed inside a monobehaviour script
         internal class GameObjectDestroyer : MonoBehaviour
@@ -45,41 +52,52 @@ namespace FinalFrontier
 
         public abstract class Entity : IEntity, ICloneable
         {
+            public const int LAYER_ON_GROUND = 9;
+            public const int LAYER_IN_AIR = 0;
+            public const float ON_GROUND_HEIGHT = 0.1f;
+
             //Clone
-            public object Clone()
-            {
-                return this.MemberwiseClone();
-            }
+            public object Clone(){return this.MemberwiseClone();}
 
             //References
-            protected EntityManager _EM;
-            protected GameObject _gameObject;
+            protected EntityManager p_EM;
+            protected GameObject p_gameObject;
 
             //Properties & Graphics
-            protected Properties _properties;
+            protected Properties p_properties;
 
             //active vars
-            private bool selected = false;
+            private bool m_selected = false;
+
+            //UI
+            protected EntityUIGroup p_UIGroup;
+            protected bool p_mouseOver = false;
+
+            //delegates
+            public delegate void EntityEventHandler(Entity entity);
+            public delegate void EntitySelectionEventHandler(Entity entity, bool state);
+            public EntityEventHandler OnStartEvent;
+            public EntityEventHandler OnTickEvent;
+            public EntityEventHandler OnUpdateEvent;
+            public EntitySelectionEventHandler OnSelectEvent;
+            public EntitySelectionEventHandler OnDeselectEvent;
+            public EntityEventHandler OnDestroyEvent;
 
             /// <summary>
             /// Called when starting the manager
             /// </summary>
             public virtual void OnStart()
             {
-                //Set default properties
-                //TODO read out of XML file
-                if(_properties == null)
-                    _properties = new Properties("entities");
+                if(p_properties == null)
+                    p_properties = new Properties("entities");
 
-                _properties.Secure("type", "entity");
-                _properties.Secure("identity", "entity");
-                _properties.Secure("displayName", "Unamed Entity");
-                _properties.Secure("x", 0);
-                _properties.Secure("y", 0);
-                _properties.Secure("traversable", true);
-                _properties.Secure("movementMode", EntityMovementMode.Static);
+                //create reference
+                p_EM = ManagerInstance.Get<EntityManager>();
 
-                _EM = ManagerInstance.Get<EntityManager>();
+                if (OnStartEvent != null)
+                    OnStartEvent(this);
+
+                p_UIGroup = new EntityUIGroup();
             }
 
             /// <summary>
@@ -87,7 +105,8 @@ namespace FinalFrontier
             /// </summary>
             public virtual void OnTick()
             {
-
+                if (OnTickEvent != null)
+                    OnTickEvent(this);
             }
 
             /// <summary>
@@ -95,7 +114,8 @@ namespace FinalFrontier
             /// </summary>
             public virtual void OnUpdate()
             {
-
+                if (OnUpdateEvent != null)
+                    OnUpdateEvent(this);
             }
 
             /// <summary>
@@ -108,58 +128,75 @@ namespace FinalFrontier
 
             public virtual void OnSelect()
             {
-                ManagerInstance.Get<UIManager>().InspectPropeties(_properties);
-                selected = true;
+                ManagerInstance.Get<UIManager>().propertyInspector.SetInspectingEntity(this);
+                m_selected = true;
                 //TODO: turn outline on
+
+                if (OnSelectEvent != null)
+                    OnSelectEvent(this, true);
+
+                p_UIGroup.Toggle(true);
             }
 
             public virtual void OnDeselect()
             {
-                ManagerInstance.Get<UIManager>().ClosePropertyInspector();
-                selected = false;
+                ManagerInstance.Get<UIManager>().propertyInspector.Close();
+                m_selected = false;
                 //TODO: turn outline off
+
+                if (OnDeselectEvent != null)
+                    OnDeselectEvent(this, false);
+
+                p_UIGroup.Toggle(false);
             }
 
             //Unity Events
-            public void OnMouseOver()
+            public virtual void OnMouseOver()
             {
 
             }
 
-            public void OnMouseEnter()
+            public virtual void OnMouseEnter()
             {
-                OnSelect();
+                p_mouseOver = true;
             }
 
-            public void OnMouseExit()
+            public virtual void OnMouseExit()
             {
-                OnDeselect();
+                p_mouseOver = false;
             }
-
+            
             public void SetupCollision()
             {
-                if(_gameObject == null)
+                if(p_gameObject == null)
                     return;
 
-                _gameObject.AddComponent<BoxCollider2D>();
-                _gameObject.AddComponent<EntityCollision>().entity = this;
+                //p_gameObject.AddComponent<BoxCollider2D>();
+                p_gameObject.AddComponent<EntityCollision>().entity = this;
             }
 
             /// <summary>
             /// Destroy this entity
             /// </summary>
+            //TODO: use destroy mode
             protected void Destroy(DestroyMode mode)
             {
-                _EM.UnRegisterEntity(this);
-                _gameObject.AddComponent<GameObjectDestroyer>().Destroy();
+                p_EM.UnregisterEntity(this);
+                p_gameObject.AddComponent<GameObjectDestroyer>().Destroy();
+
+                if (OnDestroyEvent != null)
+                    OnDestroyEvent(this);
             }
 
             //Position
-            public void GoToWorldPos(int x, int y)
+            public void GoToGamePos(int x, int y)
             {
-                _properties.Set("x", x);
-                _properties.Set("y", y);
-                _gameObject.transform.position = new Vector3(x - 7.5f, y - 7.5f, _gameObject.transform.position.z);
+                p_properties.Set("x", x);
+                p_properties.Set("y", y);
+                p_gameObject.transform.position = new Vector3(
+                    (x - FinalFrontier.Terrain.TerrainChunk.SIZE / 2) + ((float)GetGraphics().tileWidth / 2),
+                    (y - FinalFrontier.Terrain.TerrainChunk.SIZE / 2) + ((float)GetGraphics().tileHeight / 2), 
+                    gameObject.transform.position.z);
             }
 
             //Getters & Setters
@@ -167,10 +204,57 @@ namespace FinalFrontier
             {
                 get
                 {
-                    if(_properties == null)
-                        _properties = new Properties("entities");
+                    if(p_properties == null)
+                    {
+                        p_properties = new Properties("entities");
+                    }
 
-                    return _properties;
+                    return p_properties;
+                }
+            }
+            public string identity
+            {
+                get
+                {
+                    return p_properties.Get<string>("identity");
+                }
+            }
+            public bool isSelected
+            {
+                get
+                {
+                    return m_selected;
+                }
+            }
+            public Vector2 tilePosition
+            {
+                get
+                {
+                    return new Vector2(properties.Get<int>("x"), properties.Get<int>("y"));
+                }
+            }
+            public Vector2 unityPosition
+            {
+                get
+                {
+                    Vector2 result = Vector2.zero;
+                    result.x = (tilePosition.x - FinalFrontier.Terrain.TerrainChunk.SIZE / 2) + ((float)GetGraphics().tileWidth / 2);
+                    result.y = (tilePosition.y - FinalFrontier.Terrain.TerrainChunk.SIZE / 2) + ((float)GetGraphics().tileHeight / 2);
+                    return result;
+                }
+            }
+            public EntityPositionStatus positionStatus
+            {
+                set
+                {
+                    if (value == EntityPositionStatus.InAir)
+                        p_gameObject.layer = Entity.LAYER_IN_AIR;
+                    else
+                    {
+                        Vector3 groundPos = p_gameObject.transform.position;
+                        groundPos.z = -ON_GROUND_HEIGHT;
+                        p_gameObject.transform.position = groundPos;
+                    }
                 }
             }
 
@@ -181,10 +265,14 @@ namespace FinalFrontier
 
                 if(type == typeof(Actor))
                 {
-                    result = new ActorGraphics();
+                    result = new ActorGraphics(this);
                 }else if(type == typeof(Prop))
                 {
-                    result = new PropGraphics();
+                    result = new PropGraphics(this);
+                }
+                else if (type == typeof(Building))
+                {
+                    result = new BuildingGraphics(this);
                 }
 
                 return result;
@@ -194,16 +282,25 @@ namespace FinalFrontier
             {
                 get
                 {
-                    return _gameObject;
+                    return p_gameObject;
                 }
                 set
                 {
-                    _gameObject = value;
+                    p_gameObject = value;
                 }
             }
 
             public abstract GraphicsBase GetGraphics();
             public abstract void SetGraphics(GraphicsBase graphics);
+
+            //static helpers
+            public static Vector2 ConvertGameToUnityPosition(Vector2 tilePosition, int tileWidth, int tileHeight)
+            {
+                Vector2 result = Vector2.zero;
+                result.x = (tilePosition.x - FinalFrontier.Terrain.TerrainChunk.SIZE / 2) + ((float)tileWidth / 2);
+                result.y = (tilePosition.y - FinalFrontier.Terrain.TerrainChunk.SIZE / 2) + ((float)tileHeight / 2);
+                return result;
+            }
         }
     }
 }

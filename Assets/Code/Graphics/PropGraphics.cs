@@ -4,16 +4,18 @@ using System.IO;
 
 using UnityEngine;
 
+using FinalFrontier.Entities;
+
 namespace FinalFrontier
 {
     namespace Graphics
     {
         public class PropGraphics : GraphicsBase
         {
-            public PropGraphics()
+            public PropGraphics(Entity entity) : base(entity)
             {
-                _textureData = new List<Color[]>();
-                folder = "entities/props";
+                p_textureData = new List<Color[]>();
+                p_folder = "entities/props";
             }
         }
     }

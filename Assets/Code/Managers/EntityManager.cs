@@ -8,9 +8,12 @@ using System.Reflection;
 using UnityEngine;
 
 using FinalFrontier.Entities;
-using FinalFrontier.Entities.Player;
+using FinalFrontier.Entities.BehvaiourScripts;
+using FinalFrontier.Terrain;
 using FinalFrontier.Graphics;
 using FinalFrontier.Serialization;
+using FinalFrontier.UI;
+using FinalFrontier.Managers.Base;
 
 namespace FinalFrontier
 {
@@ -18,58 +21,98 @@ namespace FinalFrontier
     {
         public class EntityManager : ManagerBase
         {
-            private List<Entity> _entityCache;
-            private bool[,] _entityPlacementMap;
+            private List<Entity> m_entityCache;
+            private TerrainDataMap<bool> m_entityPlacementMap;
 
-            private List<Entity> _entities;
-            private int _entityCount;
+            private List<Entity> m_entities;
+            private int m_entityCount;
 
+            //behaviour scripts
+            private List<EntityBehaviourScript> m_entityBehaviourScripts;
 
             public override void OnStart()
             {
+                m_entityBehaviourScripts = new List<EntityBehaviourScript>();
+                m_entityPlacementMap.UpdateAllOverlays();
+                m_entityPlacementMap.ApplyAllOverlays();
 
+                //if we are loading a savegame, instantiate our loaded entities
+                if (GameManager.gameState == GameState.StartingSave)
+                {
+                    Properties[] loadedEntities = GameManager.saveDataContainer.saveGame.entityProperties.ToArray();
+                    for (int i = 0; i < loadedEntities.Length; i++)
+                    {
+                        int x = loadedEntities[i].Get<int>("x");
+                        int y = loadedEntities[i].Get<int>("y");
+                        Entity entity;
+
+                        switch (loadedEntities[i].Get<string>("type"))
+                        {
+                            case "actor":
+                                entity = CreateEntity<Actor>(Find<Actor>(loadedEntities[i].Get<string>("identity")), x, y);
+                                entity.properties.SetAll(loadedEntities[i]);
+                                break;
+                            case "prop":
+                                entity = CreateEntity<Prop>(Find<Prop>(loadedEntities[i].Get<string>("identity")), x, y);
+                                entity.properties.SetAll(loadedEntities[i]);
+                                break;
+                            case "building":
+                                entity = ManagerInstance.Get<BuildManager>().BuildBuildingAt(x, y, loadedEntities[i].Get<string>("identity"), true);
+                                entity.properties.SetAll(loadedEntities[i]);
+                                break;
+                        }
+                    }
+                }
             }
 
             public override void OnTick()
             {
-                for (int i = 0; i < _entityCount; i++)
+                for (int i = 0; i < m_entityCount; i++)
                 {
-                    _entities[i].OnTick();
+                    m_entities[i].OnTick();
                 }
             }
 
             public override void OnUpdate()
             {
-                for (int i = 0; i < _entityCount; i++)
+                for (int i = 0; i < m_entityCount; i++)
                 {
-                    _entities[i].OnUpdate();
+                    m_entities[i].OnUpdate();
                 }
-            }
-
-            public override void OnSave()
-            {
-                //
             }
 
             public override void OnLoad()
             {
+                if (m_entityCache == null)
+                    m_entityCache = new List<Entity>();
+
                 LoadEntities("actors");
                 LoadEntities("props");
+                LoadEntities("buildings");
 
-                _entities = new List<Entity>();
-                _entityPlacementMap = new bool[TerrainManager.worldSize, TerrainManager.worldSize];
-                for (int x = 0; x < TerrainManager.worldSize; x++)
-                {
-                    for (int y = 0; y < TerrainManager.worldSize; y++)
-                    {
-                        _entityPlacementMap[x, y] = false;
-                    }
-                }
-                _entityCount = 0;
+                //entity placement datamap
+                m_entityPlacementMap = new TerrainDataMap<bool>();
 
-                for (int i = 0; i < _entityCache.Count; i++)
+                //creating overlay
+                BuildableTerrainOverlay buildableOverlay = new BuildableTerrainOverlay();
+                buildableOverlay.BuildOverlay();
+
+                //registering overlay
+                ManagerInstance.Get<UIManager>().AddTerrainOverlay(buildableOverlay);
+                ManagerInstance.Get<InputManager>().AddEventListener(InputPressType.Up, KeyCode.F1, buildableOverlay.ToggleOverlay);
+
+                //adding overlay to datamap
+                m_entityPlacementMap.AddTerrainOverlay(buildableOverlay);
+
+                //entity list & count
+                m_entities = new List<Entity>();
+                m_entityCount = 0;
+
+                m_entityPlacementMap.SetAllData(false, false);
+
+                for (int i = 0; i < m_entityCache.Count; i++)
                 {
-                    _entityCache[i].OnLoad();
+                    m_entityCache[i].OnLoad();
                 }
             }
 
@@ -78,19 +121,40 @@ namespace FinalFrontier
                 throw new NotImplementedException();
             }
 
-            public Entity CreateEntityFrom<T>(Entity entityPrefab, int x, int y) where T : Entity
+            public Entity CreateEntity<T>(Entity entityPrefab, int x, int y, EntityBehaviourScript[] behaviourScripts = null) where T : Entity
             {
+                if (GameManager.gameState != GameState.StartingNew && GameManager.gameState != GameState.Playing && GameManager.gameState != GameState.StartingSave)
+                    Debug.LogError("Creating entity in wrong gamestate");
+                
                 bool allowed = true;
+                int tileWidth = entityPrefab.properties.Get<int>("tileWidth");
+                int tileHeight = entityPrefab.properties.Get<int>("tileHeight");
                 
                 if(entityPrefab.properties.Get<string>("movementMode") == EntityMovementMode.Static)
                 {
-                    if(_entityPlacementMap[x, y])
-                        allowed = false;
-                    else
-                        _entityPlacementMap[x, y] = true;
+                    for (int sX = 0; sX < tileWidth; sX++)
+			        {
+			            for (int sY = 0; sY < tileHeight; sY++)
+			            {
+			                if(m_entityPlacementMap.GetDataAt(x + sX, y + sY))
+                            {
+                                allowed = false;
+                                break;
+                            }
+			            }
+			        }
                 }
                 if (!allowed)
-                    return entityPrefab;
+                    return null;
+
+                for (int sX = 0; sX < tileWidth; sX++)
+                {
+                    for (int sY = 0; sY < tileHeight; sY++)
+                    {
+                        m_entityPlacementMap.SetDataAt(x + sX, y + sY, true);
+                    }
+                }
+                m_entityPlacementMap.ApplyAllOverlays();
 
                 //Create the new entity
                 T newEntity = Activator.CreateInstance(typeof(T)) as T;
@@ -105,36 +169,64 @@ namespace FinalFrontier
                 }
 
                 //Setup the graphics & GameObject for the new entity
-                GameObject gameObject = new GameObject(newEntity.properties.Get<string>("displayName") + " [" + x + ", " + y + "]");
+                GameObject gameObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                gameObject.name = newEntity.properties.Get<string>("displayName") + " [" + x + ", " + y + "]";
                 gameObject.transform.parent = parent.transform;
-                gameObject.transform.localScale = new Vector2(3.2f, 3.2f);
-                gameObject.transform.localPosition = new Vector3(0, 0, -2f);
+                gameObject.transform.localScale = new Vector3(entityPrefab.properties.Get<int>("tileWidth"), entityPrefab.properties.Get<int>("tileHeight"), 1);
+                gameObject.transform.localPosition = new Vector3(0, 0, -0.05f);
 
+                //Setup graphics
                 newEntity.gameObject = gameObject;
-                gameObject.AddComponent<SpriteRenderer>().sprite = newEntity.GetGraphics().randomSprite;
+                gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/Entity") as Material;
+                gameObject.GetComponent<Renderer>().material.SetTexture("_MainTex", newEntity.GetGraphics().texture());
+                gameObject.GetComponent<Renderer>().sortingOrder = 1;
 
                 //Some final touches
-                newEntity.GoToWorldPos(x, y);
+                newEntity.GoToGamePos(x, y);
                 newEntity.SetupCollision();
+                //newEntity.positionStatus = EntityPositionStatus.OnGround;
 
                 //Register the new entity
-                _entities.Add(newEntity);
-                _entityCount++;
+                m_entities.Add(newEntity);
+                m_entityCount++;
+
+                //add our behaviour scripts
+                if (behaviourScripts != null)
+                {
+                    for (int i = 0; i < behaviourScripts.Length; i++)
+                    {
+                        behaviourScripts[i].AttachToEntity(newEntity);
+                    }
+                }
+
                 newEntity.OnStart();
 
                 return newEntity;
             }
 
-            public void UnRegisterEntity(Entity entity)
+            public void UnregisterEntity(Entity entity)
             {
-                _entities.Remove(entity);
-                _entityCount--;
+                m_entities.Remove(entity);
+                m_entityCount--;
+            }
+
+            public void RegisterEntityBehaviourScript(EntityBehaviourScript script)
+            {
+                m_entityBehaviourScripts.Add(script);
+            }
+
+            public void UnregisterEntityBehaviourScript(EntityBehaviourScript script)
+            {
+                if (m_entityBehaviourScripts.Contains(script))
+                    m_entityBehaviourScripts.Remove(script);
+                else
+                    Debug.LogError("You are trying to unregister a behaviour script that has not been registered yet.");
             }
 
             public void LoadEntities(string folder)
             {
-                if(_entityCache == null)
-                    _entityCache = new List<Entity>();
+                if(m_entityCache == null)
+                    m_entityCache = new List<Entity>();
 
                 string[] folders = Directory.GetDirectories(Properties.dataRootPath + "entities/" + folder);
 
@@ -143,10 +235,21 @@ namespace FinalFrontier
                     string[] split = folders[i].Split('\\');
                     folders[i] = split[split.Length - 1];
 
-                    Properties p = new Properties("entities/" + folder);
-                    p.Load(folders[i] + "/" + folders[i] + ".xml");
+                    string entityFolder = Properties.dataRootPath + "entities/" + folder + "/" + folders[i];
+                    string[] propertyFiles = Directory.GetFiles(entityFolder, "*.xml");
 
+                    Properties p = new Properties("entities/" + folder);
+
+                    for (int file = 0; file < propertyFiles.Length; file++)
+                    {
+                        string[] splitFile = propertyFiles[file].Split('\\');
+                        string propFile = splitFile[splitFile.Length - 1];
+
+                        p.Load(folders[i] + "/" + propFile);
+                    }
+                    
                     Entity entity = null;
+
                     string type = p.Get<string>("type");
                     switch (type)
                     {
@@ -158,17 +261,27 @@ namespace FinalFrontier
                         entity = new Prop();
                         entity.SetGraphics(entity.GenerateGraphics<Prop>());
                         break;
+                        case "building":
+                        entity = new Building();
+                        entity.SetGraphics(entity.GenerateGraphics<Building>());
+                        break;
                     }
                     GraphicsBase graphics = entity.GetGraphics();
                     graphics.variants = p.Get<int>("spriteVariants");
-                    graphics.LoadFrom(folders[i] + "/" + folders[i]);
+
+                    if(p.Has("tileHeight"))
+                        graphics.tileHeight = p.Get<int>("tileHeight");
+                    if (p.Has("tileWidth"))
+                        graphics.tileWidth = p.Get<int>("tileWidth");
+
+                    graphics.LoadFrom(folders[i] + "/" + folders[i], p);
 
                     if (entity != null)
                     {
                         entity.properties.SetAll(p);
                         //entity
 
-                        _entityCache.Add(entity);
+                        m_entityCache.Add(entity);
                     }
                     else
                     {
@@ -180,32 +293,96 @@ namespace FinalFrontier
             public Prop[] GetLoadedFlora(string planetType = "any")
             {
                 List<Prop> result = new List<Prop>();
-                for (int i = 0; i < _entityCache.Count; i++)
+                for (int i = 0; i < m_entityCache.Count; i++)
                 {
-                    if (_entityCache[i].properties.Get<string>("type") != "prop")
+                    if (m_entityCache[i].properties.Get<string>("type") != "prop")
                         continue;
                     else
                     if(planetType != "any")
                     {
-                        if (planetType == _entityCache[i].properties.Get<string>("planetType") || _entityCache[i].properties.Get<string>("planetType") == "any")
-                            if (_entityCache[i].properties.Get<string>("propType") == "flora")
-                                result.Add(_entityCache[i] as Prop);
+                        if (planetType == m_entityCache[i].properties.Get<string>("planetType") || m_entityCache[i].properties.Get<string>("planetType") == "any")
+                            if (m_entityCache[i].properties.Get<string>("propType") == "flora")
+                                result.Add(m_entityCache[i] as Prop);
                     }
                     else
                     {
-                        if (_entityCache[i].properties.Get<string>("propType") == "flora")
-                            result.Add(_entityCache[i] as Prop);
+                        if (m_entityCache[i].properties.Get<string>("propType") == "flora")
+                            result.Add(m_entityCache[i] as Prop);
                     }
                 }
                 return result.ToArray();
             }
 
-            public int entityCount
+            public Building[] GetLoadedBuildings()
+            {
+                List<Building> result = new List<Building>();
+                for (int i = 0; i < m_entityCache.Count; i++)
+                {
+                    if (m_entityCache[i].properties.Get<string>("type") != "building")
+                        continue;
+                    else
+                        result.Add(m_entityCache[i] as Building);
+                }
+                return result.ToArray();
+            }
+
+            public T Find<T>(string identity) where T : Entity
+            {
+                T result = default(T);
+                
+                for (int i = 0; i < m_entityCache.Count; i++)
+                {
+                    if (m_entityCache[i].GetType() == typeof(T))
+                        if (m_entityCache[i].properties.Get<string>("identity") == identity)
+                            return (T)m_entityCache[i];
+                }
+                return result;
+            }
+
+            public int activeEntityCount
             {
                 get
                 {
-                    return _entityCount;
+                    return m_entities.Count;
                 }
+            }
+
+            public int cachedEntityCount
+            {
+                get
+                {
+                    return m_entityCache.Count;
+                }
+            }
+
+            public List<Entity> entities
+            {
+                get
+                {
+                    return m_entities;
+                }
+            }
+
+            public List<Properties> allEntityProperties
+            {
+                get
+                {
+                    List<Properties> properties = new List<Properties>();
+
+                    for (int i = 0; i < m_entities.Count; i++)
+                    {
+                        properties.Add(m_entities[i].properties);
+                    }
+
+                    return properties;
+                }
+            }
+
+            public bool isTileAvaiableAt(int x, int y)
+            {
+                if (m_entityPlacementMap.GetDataAt(x, y))
+                    return false;
+                return true;
             }
         }
     }

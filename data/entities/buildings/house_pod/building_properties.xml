@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<ArrayOfProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Property>
+    <Key>buildingType</Key>
+    <Value xsi:type="xsd:string">housing</Value>
+  </Property>
+  <Property>
+    <Key>buildMode</Key>
+    <Value xsi:type="xsd:string">dropDown</Value>
+  </Property>
+  <Property>
+    <Key>productionRequiredItems</Key>
+    <Value xsi:type="xsd:string">power:10</Value>
+  </Property>
+  <Property>
+    <Key>produces</Key>
+    <Value xsi:type="xsd:string">credit:10</Value>
+  </Property>
+  
+</ArrayOfProperty>

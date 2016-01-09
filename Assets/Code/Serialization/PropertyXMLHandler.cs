@@ -11,13 +11,12 @@ namespace FinalFrontier
     {
         public static class PropertyXMLHandler
         {
-            public static void Save(Properties properties)
+            public static void Save(Properties properties, string savePath)
             {
-                if (!Directory.Exists(properties.dataPath))
-                    Directory.CreateDirectory(properties.dataPath);
-
                 XmlSerializer serializer = new XmlSerializer(typeof(List<Property<string, object>>));
-                using (StreamWriter stream = new StreamWriter(properties.dataPath + "/" + properties.fileName, false, Encoding.GetEncoding("UTF-8")))
+                string finalPath = savePath + "/" + properties.folder + "/"  + properties.fileName;
+
+                using (StreamWriter stream = new StreamWriter(finalPath))
                 {
                     try
                     {
@@ -34,12 +33,12 @@ namespace FinalFrontier
                 string path = properties.dataPath;
                 string fileName = properties.fileName;
                 XmlSerializer serializer = new XmlSerializer(typeof(List<Property<string, object>>));
-
+                
                 using (FileStream stream = new FileStream(path + "/" + fileName, FileMode.Open))
                 {
                     try
                     {
-                        properties.SetAll(serializer.Deserialize(stream) as List<Property<string, object>>);
+                        properties.AddAll(serializer.Deserialize(stream) as List<Property<string, object>>);
                     }
                     catch (XmlException e)
                     {

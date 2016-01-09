@@ -8,36 +8,51 @@ using FinalFrontier.Serialization;
 
 public enum GameState
 {
+    Booting,
     Playing,
     Paused,
     MainMenu,
-    Loading
+    LoadingNew,
+    LoadingSave,
+    StartingNew,
+    StartingSave
 }
 
 public class Main : MonoBehaviour {
 
-    private GameManager _gm;
+    //DebugOnly //save-2016-01-02_01-29-59-PM
+    public string saveGameName = "null"; 
 
-	private void Start()
+	private void Awake()
     {
+        if (saveGameName != "null")
+        {
+            Savegame save = new Savegame();
+            save.LoadSaveFolder(saveGameName);
+            GameManager.saveDataContainer.saveGame = save;
+            GameManager.saveDataContainer.state = SaveDataState.Load;
+        }
+
+        if (GameManager.saveDataContainer.state == SaveDataState.Load)
+            GameManager.gameState = GameState.LoadingSave;
+        else
+            GameManager.gameState = GameState.LoadingNew;
+        
         //Load Managers
         ManagerInstance.OnLoad();
-
-        //Get References
-        _gm = ManagerInstance.Get<GameManager>();
 
         //Start Managers
         ManagerInstance.OnStart();
 
         //DEBUG: move cam to middle of level
         int center = TerrainManager.WORLD_WIDTH * FinalFrontier.Terrain.TerrainChunk.SIZE / 2 - 8;
-        Camera.main.transform.position = new Vector3(center, center, -10);
+        Camera.main.transform.position = new Vector3(center, center, -20);
     }
 
     private void Update()
     {
         OnTick();
-        if (_gm.gameState == GameState.Playing)
+        if (GameManager.gameState == GameState.Playing)
             OnUpdate();
     }
 
@@ -52,8 +67,21 @@ public class Main : MonoBehaviour {
         ManagerInstance.OnUpdate();
     }
 
-    private void Save()
+    public static Main instance
     {
-        ManagerInstance.OnSave();
+        get
+        {
+            return GameObject.Find("Main").GetComponent<Main>();
+        }
+    }
+}
+
+public static class Extensions
+{
+    public static bool IsDefault<T>(this T value) where T : struct
+    {
+        bool isDefault = value.Equals(default(T));
+
+        return isDefault;
     }
 }

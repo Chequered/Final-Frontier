@@ -1,26 +1,34 @@
 ﻿using UnityEngine;
+
 using System.Collections.Generic;
 using System.Xml;
 using System.Xml.Serialization;
 using System.IO;
 
+using FinalFrontier.Managers;
+
 namespace FinalFrontier
 {
     namespace Serialization
     {
+        [System.Serializable]
         public class Properties
         {
-            public static string dataRootPath = Application.dataPath + "/.." + "/data/"; 
+            public static string dataRootPath = Application.dataPath + "/.." + "/Data/";
+            public static string saveRootPath = Application.dataPath + "/.." + "/Saves/";
 
-            private List<Property<string, object>> _properties;
+            private List<Property<string, object>> m_properties;
+            
+            private string m_fileName;
 
             public string dataPath;
-            public string fileName;
+            public string folder;
 
-            public Properties(string folder = "unspecified")
+            public Properties(string folder)
             {
-                dataPath = Application.dataPath + "/.." + "/data/" + folder;
-                _properties = new List<Property<string, object>>();
+                this.folder = folder;
+                dataPath = Application.dataPath + "/.." + "/Data/" + folder;
+                m_properties = new List<Property<string, object>>();
             }
 
             /// <summary>
@@ -29,9 +37,9 @@ namespace FinalFrontier
             /// <returns></returns>
             public List<Property<string, object>> GetAll()
             {
-                if(_properties == null)
-                    _properties = new List<Property<string, object>>();
-                return _properties;
+                if(m_properties == null)
+                    m_properties = new List<Property<string, object>>();
+                return m_properties;
             }
             
             /// <summary>
@@ -40,14 +48,14 @@ namespace FinalFrontier
             /// <param name="properties">properties to overwrite with</param>
             public void SetAll(Properties properties)
             {
-                _properties.Clear();
-                _properties.AddRange(properties.GetAll());
+                m_properties.Clear();
+                m_properties.AddRange(properties.GetAll());
             }
 
             public void SetAll(List<Property<string, object>> properties)
             {
-                _properties.Clear();
-                _properties.AddRange(properties);
+                m_properties.Clear();
+                m_properties.AddRange(properties);
             }
 
             /// <summary>
@@ -56,16 +64,7 @@ namespace FinalFrontier
             /// <param name="properties">properties to add</param>
             public void AddAll(List<Property<string, object>> properties)
             {
-                for (int i = 0; i < _properties.Count; i++)
-                {
-                    for (int p = 0; p < properties.Count; p++)
-                    {
-                        if(_properties[i].Key != properties[p].Key)
-                        {
-                            Set(properties[p].Key, properties[p].Value);
-                        }
-                    }
-                }
+                m_properties.AddRange(properties);
             }
 
             /// <summary>
@@ -77,11 +76,11 @@ namespace FinalFrontier
             public T Get<T>(string key)
             {
 
-                for (int i = 0; i < _properties.Count; i++)
+                for (int i = 0; i < m_properties.Count; i++)
                 {
-                    if (_properties[i].Key == key)
+                    if (m_properties[i].Key == key)
                     {
-                        return (T)_properties[i].Value;
+                        return (T)m_properties[i].Value;
                     }
                 }
                 return default(T);
@@ -95,15 +94,15 @@ namespace FinalFrontier
             /// <param name="value">The value of the property</param>
             public void Set(string key, object value)
             {
-                for (int i = 0; i < _properties.Count; i++)
+                for (int i = 0; i < m_properties.Count; i++)
                 {
-                    if (_properties[i].Key == key)
+                    if (m_properties[i].Key == key)
                     {
-                        _properties[i] = new Property<string, object>(key, value);
+                        m_properties[i] = new Property<string, object>(key, value);
                         return;
                     }
                 }
-                _properties.Add(new Property<string, object>(key, value));
+                m_properties.Add(new Property<string, object>(key, value));
             }
 
             /// <summary>
@@ -114,9 +113,9 @@ namespace FinalFrontier
             public bool Has(string key)
             {
                 bool result = false;
-                for (int i = 0; i < _properties.Count; i++)
+                for (int i = 0; i < m_properties.Count; i++)
                 {
-                    if (_properties[i].Key == key)
+                    if (m_properties[i].Key == key)
                     {
                         result = true;
                         break;
@@ -132,14 +131,14 @@ namespace FinalFrontier
             /// <param name="value">The value of the property</param>
             public void Secure(string key, object value)
             {
-                for (int i = 0; i < _properties.Count; i++)
+                for (int i = 0; i < m_properties.Count; i++)
                 {
-                    if (_properties[i].Key == key)
+                    if (m_properties[i].Key == key)
                     {
                         return;
                     }
                 }
-                _properties.Add(new Property<string, object>(key, value));
+                m_properties.Add(new Property<string, object>(key, value));
             }
 
             /// <summary>
@@ -149,37 +148,8 @@ namespace FinalFrontier
             {
                 get
                 {
-                    return _properties.Count;
+                    return m_properties.Count;
                 }
-            }
-
-            /// <summary>
-            /// Save the properties to an XML file
-            /// </summary>
-            public void Save()
-            {
-                if(Get<string>("identity") != null)
-                {
-                    fileName = Get<string>("identity") + ".xml";
-                }else if(Get<string>("name") != null)
-                {
-                    fileName = Get<string>("name") + ".xml";
-                }
-                else
-                {
-                    fileName = "unnamed.xml";
-                }
-                PropertyXMLHandler.Save(this);
-            }
-
-            /// <summary>
-            /// Load properties from specified file
-            /// </summary>
-            /// <param name="fileName">file to load properties from, do not include path</param>
-            public void Load(string fileName)
-            {
-                this.fileName = fileName;
-                PropertyXMLHandler.Load(this);
             }
 
             /// <summary>
@@ -188,18 +158,50 @@ namespace FinalFrontier
             public void LogAll()
             {
                 string txt = "";
-                for (int i = 0; i < _properties.Count; i++)
+                for (int i = 0; i < m_properties.Count; i++)
                 {
-                    txt += _properties[i].Key + ": " + _properties[i].Value + "\n";
+                    txt += m_properties[i].Key + ": " + m_properties[i].Value + " (" + m_properties[i].Value.GetType() + ")" + "\n";
                 }
                 Debug.Log(txt);
             }
 
-            public string folder
+            //Serialization
+            public void Load()
             {
+                PropertyXMLHandler.Load(this);
+            }
+
+            public void Load(string _fileName)
+            {
+                m_fileName = _fileName;
+                PropertyXMLHandler.Load(this);
+            }
+
+            public void GenerateFileName()
+            {
+                if (Get<string>("identity") != null)
+                {
+                    m_fileName = Get<string>("identity") + ".xml";
+                }
+                else if (Get<string>("name") != null)
+                {
+                    m_fileName = Get<string>("name") + ".xml";
+                }
+                else
+                {
+                    m_fileName = "unnamed.xml";
+                }
+            }
+
+            public string fileName
+            {
+                get
+                {
+                    return m_fileName;
+                }
                 set
                 {
-                    dataPath = Application.dataPath + "/.." + "/data/" + value;
+                    m_fileName = value;
                 }
             }
         }

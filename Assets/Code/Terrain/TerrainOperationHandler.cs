@@ -15,9 +15,9 @@ namespace FinalFrontier
         public class TerrainOperationHandler : MonoBehaviour
         {
             //Progress GUI
-            private int _maxProgress = 100;
-            private int _currentProgress = 0;
-            private bool _showGUI = false;
+            private int m_maxProgress = 100;
+            private int m_currentProgress = 0;
+            private bool m_showGUI = false;
             
             #region Draw
             public void Draw(TerrainChunk chunk)
@@ -32,18 +32,18 @@ namespace FinalFrontier
                 List<TerrainTile> tileDrawQueue = chunk.terrainTileDrawQueue;
 
                 //Setup Progress GUI
-                _maxProgress = tileDrawQueue.Count;
-                _showGUI = true;
+                m_maxProgress = tileDrawQueue.Count;
+                m_showGUI = true;
 
                 //texture resolution
-                int res = TerrainTileGraphics.TEXTURE_RESOLUTION;
+                int res = TerrainTileGraphics.TILE_TEXTURE_RESOLUTION;
 
                 int cached = 0;
 
                 //Go through the chunks internal drawQueue
                 for (int i = 0; i < tileDrawQueue.Count; i++)
                 {
-                    _currentProgress = i;
+                    m_currentProgress = i;
 
                     //Search for cached version
                     Color[] cache = ManagerInstance.Get<TerrainManager>().GetCachedTexture(tileDrawQueue[i]);
@@ -56,7 +56,7 @@ namespace FinalFrontier
                     else
                     {
                         //No cache found, drawing new one
-                        TerrainTileGraphics graphics = ManagerInstance.Get<TerrainManager>().FindFromCache(tileDrawQueue[i].identity).graphics;
+                        TerrainTileGraphics graphics = ManagerInstance.Get<TerrainManager>().FindTerrainTileCache(tileDrawQueue[i].identity).graphics;
                         Color[] tex = graphics.GetTextureData(UnityEngine.Random.Range(0, graphics.variants));
                         terrainTex.SetPixels(tileDrawQueue[i].x * res, tileDrawQueue[i].y * res, res, res, tex);
 
@@ -75,7 +75,7 @@ namespace FinalFrontier
                 yield return new WaitForEndOfFrame();
 
                 //hide progress GUI
-                _showGUI = false;
+                m_showGUI = false;
                 yield return new WaitForEndOfFrame();
             }
 
@@ -84,11 +84,11 @@ namespace FinalFrontier
             #region GUI
             private void OnGUI()
             {
-                if(_showGUI)
+                if(m_showGUI)
                 {
                     GUI.Label(new Rect(Screen.width / 2 - 50, 25, 100, 25), "Drawing Terrain");
-                    GUI.Label(new Rect(Screen.width / 2 - 15, 50, 25, 25), "" + _currentProgress);
-                    GUI.Label(new Rect(Screen.width / 2 + 15, 50, 25, 25), "/" + _maxProgress);
+                    GUI.Label(new Rect(Screen.width / 2 - 15, 50, 25, 25), "" + m_currentProgress);
+                    GUI.Label(new Rect(Screen.width / 2 + 15, 50, 25, 25), "/" + m_maxProgress);
                 }
             }
             #endregion

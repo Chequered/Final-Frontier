@@ -13,40 +13,36 @@ namespace FinalFrontier
         public class TerrainTile : IEngineEvents
         {
             //References
-            private TerrainChunk _chunk;
+            private TerrainChunk m_chunk;
 
             //Properties
             public int x, y;
-            private Properties _properties;
+            private Properties m_properties;
 
             //Demographic
-            private TerrainTileNeighborInfo _neighborInfo;
-
-            //UI
-            private UIManager _uiManager;
-
+            private TerrainTileNeighborInfo m_neighborInfo;
+            
             public TerrainTile(int x, int y, TerrainChunk chunk)
             {
                 //Properties
-                _properties = new Properties("terrainTiles");
-                _properties.Secure("type", "terrainTile");
-                _properties.Secure("spriteVariants", 1);
+                m_properties = new Properties("terrainTiles");
+                
+                m_properties.Secure("type", "terrainTile");
+                m_properties.Secure("spriteVariants", 1);
 
                 //Constructor values
-                _chunk = chunk;
+                m_chunk = chunk;
                 this.x = x; this.y = y;
 
                 //Misc
-                _neighborInfo = new TerrainTileNeighborInfo();
-                _neighborInfo.identity = identity;
-
-                _uiManager = ManagerInstance.Get<UIManager>();
+                m_neighborInfo = new TerrainTileNeighborInfo();
+                m_neighborInfo.identity = identity;
             }
 
             public void OnStart()
             {
                 //default properties
-                _properties.Secure("identity", "null");
+                m_properties.Secure("identity", "null");
             }
 
             public void OnTick()
@@ -67,18 +63,12 @@ namespace FinalFrontier
 
             public void OnMouseOver()
             {
-                if(Input.GetMouseButtonUp(0))
-                {
-                    //select??
-                }
-                //move to on click and add selection sprite on tile
-                    _uiManager.InspectPropeties(_properties);
+
             }
 
             public void OnMouseExit()
             {
-                //Close the inspector
-                    _uiManager.ClosePropertyInspector();
+
             }
 
             //Getters
@@ -86,7 +76,7 @@ namespace FinalFrontier
             {
                 get
                 {
-                    return _properties;
+                    return m_properties;
                 }
             }
 
@@ -94,7 +84,7 @@ namespace FinalFrontier
             {
                 get
                 {
-                    return _properties.Get<string>("identity");
+                    return m_properties.Get<string>("identity");
                 }
             }
 
@@ -102,16 +92,24 @@ namespace FinalFrontier
             {
                 get
                 {
-                    return _neighborInfo;
+                    return m_neighborInfo;
+                }
+            }
+
+            public Vector2 gamePosition
+            {
+                get
+                {
+                    return new Vector2(x + m_chunk.x * TerrainChunk.SIZE, y + m_chunk.y * TerrainChunk.SIZE);
                 }
             }
 
             //Setters
             public void SetTo(TerrainTileCache tile)
             {
-                _properties.SetAll(tile.properties.GetAll());
-                _chunk.AddTileToDrawQueue(this);
-                _neighborInfo.identity = identity;
+                m_properties.SetAll(tile.properties.GetAll());
+                m_chunk.AddTileToDrawQueue(this);
+                m_neighborInfo.identity = identity;
             }
         }
     }

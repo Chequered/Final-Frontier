@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<ArrayOfProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Property>
+    <Key>buildingType</Key>
+    <Value xsi:type="xsd:string">headquarters</Value>
+  </Property>
+    <Property>
+    <Key>buildMode</Key>
+    <Value xsi:type="xsd:string">dropDown</Value>
+  </Property>
+    <Property>
+    <Key>produces</Key>
+    <Value xsi:type="xsd:string">credit:25/power:25/oxygen:25/water:25</Value>
+  </Property>
+    <Property>
+    <Key>maxBuildingAmount</Key>
+    <Value xsi:type="xsd:int">1</Value>
+  </Property>
+</ArrayOfProperty>

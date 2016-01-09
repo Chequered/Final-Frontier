@@ -12,11 +12,15 @@ namespace FinalFrontier
     {
         public class Actor : Entity
         {
+            private ActorGraphics m_graphics;
+
             public override void OnStart()
             {
                 base.OnStart();
-                _properties.Set("identity", "John Cena");
-                _properties.Set("entityType", "actor");
+                p_properties.Set("identity", "unnamedActor");
+                p_properties.Set("entityType", "actor");
+
+                m_graphics = new ActorGraphics(this);
             }
 
             public override void OnTick()
@@ -31,12 +35,12 @@ namespace FinalFrontier
 
             public override GraphicsBase GetGraphics()
             {
-                throw new NotImplementedException();
+                return m_graphics;
             }
 
             public override void SetGraphics(GraphicsBase graphics)
             {
-                throw new NotImplementedException();
+                m_graphics = graphics as ActorGraphics;
             }
         }
     }

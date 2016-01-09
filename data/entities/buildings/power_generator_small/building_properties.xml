@@ -1,0 +1,19 @@
+  
+<ArrayOfProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Property>
+    <Key>buildingType</Key>
+    <Value xsi:type="xsd:string">powerGenerator</Value>
+  </Property>
+    <Property>
+    <Key>buildMode</Key>
+    <Value xsi:type="xsd:string">construction</Value>
+  </Property>
+    <Property>
+    <Key>produces</Key>
+    <Value xsi:type="xsd:string">power:10</Value>
+  </Property>
+    <Property>
+    <Key>productionRequiredItems</Key>
+    <Value xsi:type="xsd:string">credit:5</Value>
+  </Property>
+  </ArrayOfProperty>

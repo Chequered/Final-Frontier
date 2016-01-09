@@ -1,0 +1,19 @@
+  
+<ArrayOfProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Property>
+    <Key>identity</Key>
+    <Value xsi:type="xsd:string">wheat</Value>
+  </Property>
+    <Property>
+    <Key>displayName</Key>
+    <Value xsi:type="xsd:string">Wheat</Value>
+  </Property>
+    <Property>
+    <Key>description</Key>
+    <Value xsi:type="xsd:string">Used to make bread. Not very tasty, but very cheap.</Value>
+  </Property>
+    <Property>
+    <Key>itemType</Key>
+    <Value xsi:type="xsd:string">item</Value>
+  </Property>
+  </ArrayOfProperty>

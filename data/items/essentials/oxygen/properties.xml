@@ -1,0 +1,19 @@
+  
+<ArrayOfProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Property>
+    <Key>identity</Key>
+    <Value xsi:type="xsd:string">oxygen</Value>
+  </Property>
+    <Property>
+    <Key>displayName</Key>
+    <Value xsi:type="xsd:string">Oxygen</Value>
+  </Property>
+    <Property>
+    <Key>description</Key>
+    <Value xsi:type="xsd:string">You need this to breathe. Pretty handy.</Value>
+  </Property>
+    <Property>
+    <Key>itemType</Key>
+    <Value xsi:type="xsd:string">essential</Value>
+  </Property>
+  </ArrayOfProperty>

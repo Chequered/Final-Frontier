@@ -3,7 +3,7 @@ using System.Collections;
 
 namespace FinalFrontier
 {
-    namespace Managers
+    namespace Managers.Base
     {
         public abstract class ManagerBase : IEngineEvents
         {
@@ -21,11 +21,6 @@ namespace FinalFrontier
             /// called each frame while the game is not paused
             /// </summary>
             public abstract void OnUpdate();
-
-            /// <summary>
-            /// Called before the game is being saved
-            /// </summary>
-            public abstract void OnSave();
 
             /// <summary>
             /// Called before a game is loaded

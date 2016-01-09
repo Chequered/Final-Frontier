@@ -3,41 +3,43 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
+using FinalFrontier.Entities;
+
 namespace FinalFrontier
 {
     namespace Graphics
     {
         public class TerrainTileGraphics : GraphicsBase
         {
-            private Color _primaryColor;
+            private Color m_primaryColor;
             public TerrainTileGraphics()
             {
-                _textureData = new List<Color[]>();
-                folder = "tiles";
+                p_textureData = new List<Color[]>();
+                p_folder = "tiles";
             }
 
             public void GeneratePrimaryColor()
             {
                 Color result = new Color();
-                for (int i = 0; i < _textureData.Count; i++)
+                for (int i = 0; i < p_textureData.Count; i++)
                 {
-                    for (int c = 0; c < _textureData[i].Length; c++)
+                    for (int c = 0; c < p_textureData[i].Length; c++)
                     {
-                        result += _textureData[i][c];
+                        result += p_textureData[i][c];
                     }
                 }
-                result = result / ((variants * TerrainTileGraphics.TEXTURE_RESOLUTION) * TerrainTileGraphics.TEXTURE_RESOLUTION);
-                _primaryColor = result;
+                result = result / ((variants * TerrainTileGraphics.TILE_TEXTURE_RESOLUTION) * TerrainTileGraphics.TILE_TEXTURE_RESOLUTION);
+                m_primaryColor = result;
             }
 
             public Color primaryColor
             {
                 get
                 {
-                    if (_primaryColor == null)
+                    if (m_primaryColor == null)
                         GeneratePrimaryColor();
 
-                    return _primaryColor;
+                    return m_primaryColor;
                 }
             }
         }

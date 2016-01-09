@@ -8,10 +8,10 @@ namespace FinalFrontier
     {
         public class TerrainChunkCollision : MonoBehaviour, IEngineEvents
         {
-            private TerrainChunk _chunk;
+            private TerrainChunk m_chunk;
 
             //MouseEvents
-            private TerrainTile _hoveringTile;
+            private TerrainTile m_hoveringTile;
 
             public void OnStart()
             {
@@ -40,29 +40,29 @@ namespace FinalFrontier
                 if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
                     return;
 
-                if(_hoveringTile != null)
+                if(m_hoveringTile != null)
                 {
-                    if (_hoveringTile != currentHoveringTile)
+                    if (m_hoveringTile != currentHoveringTile)
                     {
-                        _hoveringTile.OnMouseEnter();
+                        m_hoveringTile.OnMouseEnter();
                     }
                 }
 
-                _hoveringTile = currentHoveringTile;
-                if(_hoveringTile != null)
-                    _hoveringTile.OnMouseOver();
+                m_hoveringTile = currentHoveringTile;
+                if(m_hoveringTile != null)
+                    m_hoveringTile.OnMouseOver();
             
             }
 
             public void OnMouseExit()
             {
-                if (_hoveringTile != null)
-                    _hoveringTile.OnMouseExit();
+                if (m_hoveringTile != null)
+                    m_hoveringTile.OnMouseExit();
             }
 
             public void SetTerrainChunk(TerrainChunk chunk)
             {
-                _chunk = chunk;
+                m_chunk = chunk;
             }
 
             private TerrainTile currentHoveringTile
@@ -78,9 +78,18 @@ namespace FinalFrontier
                         int x = (int)Mathf.Floor(TerrainChunk.SIZE * (mouseHit.x + 0.5f));
                         int y = (int)Mathf.Floor(TerrainChunk.SIZE * (mouseHit.y + 0.5f));
 
-                        return _chunk.tiles[x, y];
+                        if(x < TerrainChunk.SIZE && x >= 0 && y < TerrainChunk.SIZE && y >= 0)
+                            return m_chunk.tiles[x, y];
                     }
                     return null;
+                }
+            }
+
+            public TerrainChunk chunkRef
+            {
+                get
+                {
+                    return m_chunk;
                 }
             }
         }

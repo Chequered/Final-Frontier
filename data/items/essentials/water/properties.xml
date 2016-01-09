@@ -1,0 +1,19 @@
+  
+<ArrayOfProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Property>
+    <Key>identity</Key>
+    <Value xsi:type="xsd:string">water</Value>
+  </Property>
+    <Property>
+    <Key>displayName</Key>
+    <Value xsi:type="xsd:string">Water</Value>
+  </Property>
+    <Property>
+    <Key>description</Key>
+    <Value xsi:type="xsd:string">Water is love, water is live.</Value>
+  </Property>
+    <Property>
+    <Key>itemType</Key>
+    <Value xsi:type="xsd:string">essential</Value>
+  </Property>
+  </ArrayOfProperty>

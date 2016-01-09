@@ -1,0 +1,19 @@
+  
+<ArrayOfProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Property>
+    <Key>identity</Key>
+    <Value xsi:type="xsd:string">power</Value>
+  </Property>
+    <Property>
+    <Key>displayName</Key>
+    <Value xsi:type="xsd:string">Power</Value>
+  </Property>
+    <Property>
+    <Key>description</Key>
+    <Value xsi:type="xsd:string">Power is required for most of your production based buildings. This keeps the lights on!</Value>
+  </Property>
+    <Property>
+    <Key>itemType</Key>
+    <Value xsi:type="xsd:string">essential</Value>
+  </Property>
+  </ArrayOfProperty>
