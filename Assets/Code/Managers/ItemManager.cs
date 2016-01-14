@@ -3,14 +3,14 @@ using System.IO;
 
 using UnityEngine;
 
-using FinalFrontier.UI;
-using FinalFrontier.Entities;
-using FinalFrontier.Graphics;
-using FinalFrontier.Managers.Base;
-using FinalFrontier.Items;
-using FinalFrontier.Serialization;
+using EndlessExpedition.UI;
+using EndlessExpedition.Entities;
+using EndlessExpedition.Graphics;
+using EndlessExpedition.Managers.Base;
+using EndlessExpedition.Items;
+using EndlessExpedition.Serialization;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Managers
     {

@@ -2,11 +2,11 @@
 
 using UnityEngine;
 
-using FinalFrontier.UI;
-using FinalFrontier.Terrain;
-using FinalFrontier.Managers.Base;
+using EndlessExpedition.UI;
+using EndlessExpedition.Terrain;
+using EndlessExpedition.Managers.Base;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Managers
     {
@@ -252,7 +252,7 @@ namespace FinalFrontier
                     Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
                     RaycastHit hit;
 
-                    if (Physics.Raycast(ray, out hit, LayerMask.GetMask("Terrain")))
+                    if (Physics.Raycast(ray, out hit, LayerMask.GetMask("Terrain") << 1))
                     {
                         Vector3 mouseHit = hit.transform.InverseTransformPoint(hit.point);
                         int x = (int)Mathf.Floor(TerrainChunk.SIZE * (mouseHit.x + 0.5f));

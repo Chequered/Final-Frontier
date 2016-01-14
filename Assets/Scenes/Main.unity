@@ -23,7 +23,7 @@ RenderSettings:
   m_AmbientSkyColor: {r: 0.09083044, g: 0.09704225, b: 0.1102941, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
-  m_AmbientIntensity: 1
+  m_AmbientIntensity: 0.25
   m_AmbientMode: 3
   m_SkyboxMaterial: {fileID: 0}
   m_HaloStrength: 0.5
@@ -1847,7 +1847,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2889560230641946a1ab0fe96a984b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  saveGameName: save-2016-01-02_01-29-59-PM
+  saveGameName: save-2016-01-10_10-39-37-PM
 --- !u!4 &2056473156
 Transform:
   m_ObjectHideFlags: 0

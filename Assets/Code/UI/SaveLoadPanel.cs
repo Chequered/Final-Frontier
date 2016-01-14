@@ -1,16 +1,16 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 
-using FinalFrontier.Serialization;
-using FinalFrontier.Managers;
-using FinalFrontier.Terrain;
+using EndlessExpedition.Serialization;
+using EndlessExpedition.Managers;
+using EndlessExpedition.Terrain;
 
 public enum SaveLoadMode
 {
     Save,
     Load
 }
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace UI
     {

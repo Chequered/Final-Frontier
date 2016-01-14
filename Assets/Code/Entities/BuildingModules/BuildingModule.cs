@@ -2,12 +2,12 @@
 
 using UnityEngine;
 
-using FinalFrontier.Items;
-using FinalFrontier.Serialization;
-using FinalFrontier.Managers;
-using FinalFrontier.Graphics;
+using EndlessExpedition.Items;
+using EndlessExpedition.Serialization;
+using EndlessExpedition.Managers;
+using EndlessExpedition.Graphics;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Entities.BuildingModules
     {
@@ -232,6 +232,20 @@ namespace FinalFrontier
             public override void TogglePause()
             {
                 m_productionPaused = !m_productionPaused;
+                if (m_productionPaused)
+                {
+                    ManagerInstance.Get<SimulationManager>().UnregisterProductionModule(this);
+                    building.AddStatusIcon("productionPaused", Resources.Load<Sprite>("UI/icon_pause"));
+                }
+                else
+                {
+                    ManagerInstance.Get<SimulationManager>().RegisterProductionModule(this);
+                    building.RemoveStatusIcon("productionPaused");
+                }
+            }
+            public void TogglePause(bool state)
+            {
+                m_productionPaused = state;
                 if (m_productionPaused)
                 {
                     ManagerInstance.Get<SimulationManager>().UnregisterProductionModule(this);

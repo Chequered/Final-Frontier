@@ -2,13 +2,13 @@
 
 using System.Collections.Generic;
 
-using FinalFrontier.UI;
-using FinalFrontier.Entities;
-using FinalFrontier.Entities.BehvaiourScripts;
-using FinalFrontier.Terrain;
-using FinalFrontier.Managers.Base;
+using EndlessExpedition.UI;
+using EndlessExpedition.Entities;
+using EndlessExpedition.Entities.BehvaiourScripts;
+using EndlessExpedition.Terrain;
+using EndlessExpedition.Managers.Base;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Managers
     {

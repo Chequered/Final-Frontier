@@ -2,11 +2,11 @@
 
 using UnityEngine;
 
-using FinalFrontier.Serialization;
-using FinalFrontier.Managers;
-using FinalFrontier.Entities;
+using EndlessExpedition.Serialization;
+using EndlessExpedition.Managers;
+using EndlessExpedition.Entities;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Terrain.Generation
     {

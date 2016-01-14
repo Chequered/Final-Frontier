@@ -3,10 +3,10 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
-using FinalFrontier.Serialization;
-using FinalFrontier.Graphics;
+using EndlessExpedition.Serialization;
+using EndlessExpedition.Graphics;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Items
     {

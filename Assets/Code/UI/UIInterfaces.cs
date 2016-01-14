@@ -3,12 +3,12 @@ using UnityEngine.UI;
 
 using System.Collections.Generic;
 
-using FinalFrontier.Managers;
-using FinalFrontier.Items;
-using FinalFrontier.UI.Internal;
-using FinalFrontier.Entities;
+using EndlessExpedition.Managers;
+using EndlessExpedition.Items;
+using EndlessExpedition.UI.Internal;
+using EndlessExpedition.Entities;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace UI
     {

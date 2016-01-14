@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<ArrayOfProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Property>
+    <Key>itemContainerSlots</Key>
+    <Value xsi:type="xsd:int">4</Value>
+  </Property>
+  <Property>
+    <Key>movementSpeed</Key>
+    <Value xsi:type="xsd:float">2.45</Value>
+  </Property>
+  <Property>
+    <Key>rotationSpeed</Key>
+    <Value xsi:type="xsd:float">0.65</Value>
+  </Property>  
+</ArrayOfProperty>

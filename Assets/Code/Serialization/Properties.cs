@@ -5,9 +5,9 @@ using System.Xml;
 using System.Xml.Serialization;
 using System.IO;
 
-using FinalFrontier.Managers;
+using EndlessExpedition.Managers;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Serialization
     {
@@ -75,7 +75,6 @@ namespace FinalFrontier
             /// <returns></returns>
             public T Get<T>(string key)
             {
-
                 for (int i = 0; i < m_properties.Count; i++)
                 {
                     if (m_properties[i].Key == key)

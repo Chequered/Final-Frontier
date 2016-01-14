@@ -7,15 +7,15 @@ using System.Reflection;
 
 using UnityEngine;
 
-using FinalFrontier.Entities;
-using FinalFrontier.Entities.BehvaiourScripts;
-using FinalFrontier.Terrain;
-using FinalFrontier.Graphics;
-using FinalFrontier.Serialization;
-using FinalFrontier.UI;
-using FinalFrontier.Managers.Base;
+using EndlessExpedition.Entities;
+using EndlessExpedition.Entities.BehvaiourScripts;
+using EndlessExpedition.Terrain;
+using EndlessExpedition.Graphics;
+using EndlessExpedition.Serialization;
+using EndlessExpedition.UI;
+using EndlessExpedition.Managers.Base;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Managers
     {
@@ -172,7 +172,16 @@ namespace FinalFrontier
                 GameObject gameObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
                 gameObject.name = newEntity.properties.Get<string>("displayName") + " [" + x + ", " + y + "]";
                 gameObject.transform.parent = parent.transform;
-                gameObject.transform.localScale = new Vector3(entityPrefab.properties.Get<int>("tileWidth"), entityPrefab.properties.Get<int>("tileHeight"), 1);
+                switch (entityPrefab.properties.Get<string>("type"))
+                {
+                    case "actor":
+                        gameObject.transform.localScale = new Vector3(entityPrefab.properties.Get<int>("pixWidth") / TerrainTileGraphics.TILE_TEXTURE_RESOLUTION,
+                            entityPrefab.properties.Get<int>("pixHeight") / TerrainTileGraphics.TILE_TEXTURE_RESOLUTION, 1);
+                        break;
+                    default:
+                        gameObject.transform.localScale = new Vector3(entityPrefab.properties.Get<int>("tileWidth"), entityPrefab.properties.Get<int>("tileHeight"), 1);
+                        break;
+                }
                 gameObject.transform.localPosition = new Vector3(0, 0, -0.05f);
 
                 //Setup graphics
@@ -182,8 +191,8 @@ namespace FinalFrontier
                 gameObject.GetComponent<Renderer>().sortingOrder = 1;
 
                 //Some final touches
-                newEntity.GoToGamePos(x, y);
-                newEntity.SetupCollision();
+                newEntity.GoToGamePos(x, y, newEntity.gameObject.transform.position.z, true);
+                newEntity.GenerateCollision();
                 //newEntity.positionStatus = EntityPositionStatus.OnGround;
 
                 //Register the new entity
@@ -339,6 +348,17 @@ namespace FinalFrontier
                 return result;
             }
 
+            public T[] FindAll<T>()
+            {
+                List<T> result = new List<T>();
+                for (int i = 0; i < m_entities.Count; i++)
+                {
+                    if (m_entities[i].GetType() == typeof(T))
+                        m_entities.Add(m_entities[i]);
+                }
+                return result.ToArray();
+            }
+
             public int activeEntityCount
             {
                 get
@@ -346,7 +366,6 @@ namespace FinalFrontier
                     return m_entities.Count;
                 }
             }
-
             public int cachedEntityCount
             {
                 get
@@ -354,7 +373,6 @@ namespace FinalFrontier
                     return m_entityCache.Count;
                 }
             }
-
             public List<Entity> entities
             {
                 get
@@ -362,7 +380,6 @@ namespace FinalFrontier
                     return m_entities;
                 }
             }
-
             public List<Properties> allEntityProperties
             {
                 get
@@ -377,7 +394,6 @@ namespace FinalFrontier
                     return properties;
                 }
             }
-
             public bool isTileAvaiableAt(int x, int y)
             {
                 if (m_entityPlacementMap.GetDataAt(x, y))

@@ -3,12 +3,13 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
-using FinalFrontier.Serialization;
-using FinalFrontier.Managers;
-using FinalFrontier.Graphics;
-using FinalFrontier.UI;
+using EndlessExpedition.Serialization;
+using EndlessExpedition.Managers;
+using EndlessExpedition.Graphics;
+using EndlessExpedition.UI;
+using EndlessExpedition.Items;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Entities
     {
@@ -59,6 +60,9 @@ namespace FinalFrontier
             //Clone
             public object Clone(){return this.MemberwiseClone();}
 
+            //Constants
+            private const float LIGHT_HEIGHT = 1f;
+
             //References
             protected EntityManager p_EM;
             protected GameObject p_gameObject;
@@ -68,6 +72,8 @@ namespace FinalFrontier
 
             //active vars
             private bool m_selected = false;
+            private Light m_light;
+            private ItemContainer m_itemContainer;
 
             //UI
             protected EntityUIGroup p_UIGroup;
@@ -98,6 +104,24 @@ namespace FinalFrontier
                     OnStartEvent(this);
 
                 p_UIGroup = new EntityUIGroup();
+
+                #region Read properties
+                if (properties.Has("itemContainerSlots"))
+                {
+                    AddItemContainerSpace(properties.Get<int>("itemContainerSlots"));
+                }
+
+                if (properties.Has("itemContainerSlots"))
+                {
+                    ItemContainerDisplay containerDisplay = new ItemContainerDisplay(itemContainer);
+                    containerDisplay.BuildUI();
+                    containerDisplay.Toggle(false);
+                    ManagerInstance.Get<UIManager>().AddUI(containerDisplay);
+                    p_UIGroup.AddUIElement(containerDisplay);
+
+                    containerDisplay.position = new Vector2(Screen.width / 2 + containerDisplay.windowSize.x, Screen.height / 2 + containerDisplay.windowSize.y);
+                }
+                #endregion
             }
 
             /// <summary>
@@ -128,9 +152,10 @@ namespace FinalFrontier
 
             public virtual void OnSelect()
             {
-                ManagerInstance.Get<UIManager>().propertyInspector.SetInspectingEntity(this);
+                //ManagerInstance.Get<UIManager>().propertyInspector.SetInspectingEntity(this);
                 m_selected = true;
-                //TODO: turn outline on
+
+                gameObject.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.25f, 0.25f, 0.25f));
 
                 if (OnSelectEvent != null)
                     OnSelectEvent(this, true);
@@ -140,9 +165,10 @@ namespace FinalFrontier
 
             public virtual void OnDeselect()
             {
-                ManagerInstance.Get<UIManager>().propertyInspector.Close();
+                //ManagerInstance.Get<UIManager>().propertyInspector.Close();
                 m_selected = false;
-                //TODO: turn outline off
+
+                gameObject.GetComponent<Renderer>().material.SetColor("_EmissionColor", Color.black);
 
                 if (OnDeselectEvent != null)
                     OnDeselectEvent(this, false);
@@ -165,14 +191,69 @@ namespace FinalFrontier
             {
                 p_mouseOver = false;
             }
-            
-            public void SetupCollision()
+
+            //Property Handlers
+            public void AddItemContainerSpace(int slots)
+            {
+                if (m_itemContainer == null)
+                    m_itemContainer = new ItemContainer(slots);
+                else
+                    m_itemContainer.AddSlots(slots);
+            }
+
+            #region Generation methods
+            public void GenerateCollision()
             {
                 if(p_gameObject == null)
                     return;
 
-                //p_gameObject.AddComponent<BoxCollider2D>();
                 p_gameObject.AddComponent<EntityCollision>().entity = this;
+            }
+
+            public void GenerateLight()
+            {
+                GameObject lightObj = new GameObject("Light");
+                lightObj.transform.SetParent(p_gameObject.transform, false);
+
+                m_light = lightObj.AddComponent<Light>();
+                m_light.type = LightType.Point;
+                if (properties.Has("lightStrength"))
+                    m_light.intensity = properties.Get<int>("lightStrength");
+                else
+                    m_light.intensity = 3;
+                if (properties.Has("lightSize"))
+                {
+                    m_light.range = properties.Get<int>("lightSize");
+                }
+                else
+                {
+                    m_light.range = (p_properties.Get<int>("tileWidth") * p_properties.Get<int>("tileHeight")) + LIGHT_HEIGHT;
+                    if (m_light.range < 1)
+                        m_light.range = 1 + LIGHT_HEIGHT;
+                }
+
+                lightObj.transform.Translate(new Vector3(0, 0, -m_light.intensity / 2));
+
+                if (properties.Has("lightColor"))
+                {
+                    string p = properties.Get<string>("lightColor");
+                    string[] split = p.Split('/');
+                    if (split.Length == 3)
+                    {
+                        float r = float.Parse(split[0]) / 255;
+                        float g = float.Parse(split[1]) / 255;
+                        float b = float.Parse(split[2]) / 255;
+                        m_light.color = new Color(r, g, b);
+                    }
+                    else if (split.Length == 4)
+                    {
+                        float r = float.Parse(split[0]) / 255;
+                        float g = float.Parse(split[1]) / 255;
+                        float b = float.Parse(split[2]) / 255;
+                        float a = float.Parse(split[3]) / 255;
+                        m_light.color = new Color(r, g, b, a);
+                    }
+                }
             }
 
             /// <summary>
@@ -188,15 +269,40 @@ namespace FinalFrontier
                     OnDestroyEvent(this);
             }
 
-            //Position
-            public void GoToGamePos(int x, int y)
+            public GraphicsBase GenerateGraphics<T>() where T : Entity
             {
+                Type type = typeof(T);
+                GraphicsBase result = null;
+
+                if (type == typeof(Actor))
+                {
+                    result = new ActorGraphics(this);
+                }
+                else if (type == typeof(Prop))
+                {
+                    result = new PropGraphics(this);
+                }
+                else if (type == typeof(Building))
+                {
+                    result = new BuildingGraphics(this);
+                }
+
+                return result;
+            }
+            #endregion
+            //Position
+            public virtual void GoToGamePos(float x, float y, float z, bool forceStatic = false)
+            {
+                if (p_properties.Has("movementMode") && !forceStatic)
+                    if(p_properties.Get<string>("movementMode") == "dynamic")
+                        return;
+
                 p_properties.Set("x", x);
                 p_properties.Set("y", y);
                 p_gameObject.transform.position = new Vector3(
-                    (x - FinalFrontier.Terrain.TerrainChunk.SIZE / 2) + ((float)GetGraphics().tileWidth / 2),
-                    (y - FinalFrontier.Terrain.TerrainChunk.SIZE / 2) + ((float)GetGraphics().tileHeight / 2), 
-                    gameObject.transform.position.z);
+                    (x - EndlessExpedition.Terrain.TerrainChunk.SIZE / 2) + ((float)GetGraphics().tileWidth / 2),
+                    (y - EndlessExpedition.Terrain.TerrainChunk.SIZE / 2) + ((float)GetGraphics().tileHeight / 2),
+                    z);
             }
 
             //Getters & Setters
@@ -238,8 +344,8 @@ namespace FinalFrontier
                 get
                 {
                     Vector2 result = Vector2.zero;
-                    result.x = (tilePosition.x - FinalFrontier.Terrain.TerrainChunk.SIZE / 2) + ((float)GetGraphics().tileWidth / 2);
-                    result.y = (tilePosition.y - FinalFrontier.Terrain.TerrainChunk.SIZE / 2) + ((float)GetGraphics().tileHeight / 2);
+                    result.x = (tilePosition.x - EndlessExpedition.Terrain.TerrainChunk.SIZE / 2) + ((float)GetGraphics().tileWidth / 2);
+                    result.y = (tilePosition.y - EndlessExpedition.Terrain.TerrainChunk.SIZE / 2) + ((float)GetGraphics().tileHeight / 2);
                     return result;
                 }
             }
@@ -257,27 +363,6 @@ namespace FinalFrontier
                     }
                 }
             }
-
-            public GraphicsBase GenerateGraphics<T>() where T : Entity
-            {
-                Type type = typeof(T);
-                GraphicsBase result = null;
-
-                if(type == typeof(Actor))
-                {
-                    result = new ActorGraphics(this);
-                }else if(type == typeof(Prop))
-                {
-                    result = new PropGraphics(this);
-                }
-                else if (type == typeof(Building))
-                {
-                    result = new BuildingGraphics(this);
-                }
-
-                return result;
-            }
-
             public GameObject gameObject
             {
                 get
@@ -289,6 +374,20 @@ namespace FinalFrontier
                     p_gameObject = value;
                 }
             }
+            public Light light
+            {
+                get
+                {
+                    return m_light;
+                }
+            }
+            public ItemContainer itemContainer
+            {
+                get
+                {
+                    return m_itemContainer;
+                }
+            }
 
             public abstract GraphicsBase GetGraphics();
             public abstract void SetGraphics(GraphicsBase graphics);
@@ -297,8 +396,8 @@ namespace FinalFrontier
             public static Vector2 ConvertGameToUnityPosition(Vector2 tilePosition, int tileWidth, int tileHeight)
             {
                 Vector2 result = Vector2.zero;
-                result.x = (tilePosition.x - FinalFrontier.Terrain.TerrainChunk.SIZE / 2) + ((float)tileWidth / 2);
-                result.y = (tilePosition.y - FinalFrontier.Terrain.TerrainChunk.SIZE / 2) + ((float)tileHeight / 2);
+                result.x = (tilePosition.x - EndlessExpedition.Terrain.TerrainChunk.SIZE / 2) + ((float)tileWidth / 2);
+                result.y = (tilePosition.y - EndlessExpedition.Terrain.TerrainChunk.SIZE / 2) + ((float)tileHeight / 2);
                 return result;
             }
         }

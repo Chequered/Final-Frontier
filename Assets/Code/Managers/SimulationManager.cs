@@ -2,13 +2,13 @@
 
 using UnityEngine;
 
-using FinalFrontier.UI;
-using FinalFrontier.Entities;
-using FinalFrontier.Managers.Base;
-using FinalFrontier.Items;
-using FinalFrontier.Entities.BuildingModules;
+using EndlessExpedition.UI;
+using EndlessExpedition.Entities;
+using EndlessExpedition.Managers.Base;
+using EndlessExpedition.Items;
+using EndlessExpedition.Entities.BuildingModules;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Managers
     {

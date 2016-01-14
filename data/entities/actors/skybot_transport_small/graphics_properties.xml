@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<ArrayOfProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"> 
+  <Property>
+    <Key>pixWidth</Key>
+    <Value xsi:type="xsd:int">32</Value>
+  </Property>
+  <Property>
+    <Key>pixHeight</Key>
+    <Value xsi:type="xsd:int">32</Value>
+  </Property>
+  <Property>
+    <Key>hasLight</Key>
+    <Value xsi:type="xsd:boolean">true</Value>
+  </Property>
+  <Property>
+    <Key>lightSize</Key>
+    <Value xsi:type="xsd:int">7</Value>
+  </Property>
+  <Property>
+    <Key>lightStrength</Key>
+    <Value xsi:type="xsd:int">6</Value>
+  </Property>
+</ArrayOfProperty>

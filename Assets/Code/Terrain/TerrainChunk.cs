@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
-using FinalFrontier.Graphics;
-using FinalFrontier.Managers;
+using EndlessExpedition.Graphics;
+using EndlessExpedition.Managers;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Terrain
     {

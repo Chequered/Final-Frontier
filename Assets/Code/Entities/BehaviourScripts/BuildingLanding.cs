@@ -1,8 +1,8 @@
 ﻿using UnityEngine;
 
-using FinalFrontier.Managers;
+using EndlessExpedition.Managers;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Entities
     {
@@ -19,7 +19,7 @@ namespace FinalFrontier
                 private GameObject m_particleObject;
                 private bool m_landed = false;
 
-                public BuildingLanding() : base("Building Landing")
+                public BuildingLanding() : base("buildingLanding")
                 {
 
                 }

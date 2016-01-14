@@ -3,10 +3,10 @@ using System.IO;
 
 using UnityEngine;
 
-using FinalFrontier.Serialization;
-using FinalFrontier.Entities;
+using EndlessExpedition.Serialization;
+using EndlessExpedition.Entities;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Graphics
     {
@@ -34,7 +34,7 @@ namespace FinalFrontier
                 string[] split = fileName.Split('.');
                 fileName = split[0];
 
-                string dataPath = FinalFrontier.Serialization.Properties.dataRootPath + p_folder + "/" + fileName + ".png";
+                string dataPath = EndlessExpedition.Serialization.Properties.dataRootPath + p_folder + "/" + fileName + ".png";
 
                 Texture2D tex = new Texture2D(TILE_TEXTURE_RESOLUTION * variants, TILE_TEXTURE_RESOLUTION);
                 tex.LoadImage(File.ReadAllBytes(dataPath));

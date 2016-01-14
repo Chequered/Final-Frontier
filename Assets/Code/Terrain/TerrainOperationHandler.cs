@@ -4,11 +4,11 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
-using FinalFrontier.Terrain;
-using FinalFrontier.Managers;
-using FinalFrontier.Graphics;
+using EndlessExpedition.Terrain;
+using EndlessExpedition.Managers;
+using EndlessExpedition.Graphics;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Terrain
     {

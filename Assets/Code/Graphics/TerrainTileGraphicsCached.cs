@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
-using FinalFrontier.Terrain;
+using EndlessExpedition.Terrain;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Graphics
     {

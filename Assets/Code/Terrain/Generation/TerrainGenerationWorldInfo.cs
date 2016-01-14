@@ -1,9 +1,9 @@
 ﻿using System;
 
-using FinalFrontier.Serialization;
-using FinalFrontier.Managers;
+using EndlessExpedition.Serialization;
+using EndlessExpedition.Managers;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Terrain.Generation
     {

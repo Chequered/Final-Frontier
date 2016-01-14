@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-using FinalFrontier.Serialization;
+using EndlessExpedition.Serialization;
 
 public enum SaveDataState
 {

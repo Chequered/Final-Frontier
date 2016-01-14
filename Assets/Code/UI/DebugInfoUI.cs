@@ -2,9 +2,9 @@
 
 using UnityEngine;
 
-using FinalFrontier.Managers;
+using EndlessExpedition.Managers;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace UI
     {

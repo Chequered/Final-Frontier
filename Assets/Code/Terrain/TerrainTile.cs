@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-using FinalFrontier.Serialization;
-using FinalFrontier.Managers;
-using FinalFrontier.UI;
+using EndlessExpedition.Serialization;
+using EndlessExpedition.Managers;
+using EndlessExpedition.UI;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Terrain
     {
@@ -100,7 +100,8 @@ namespace FinalFrontier
             {
                 get
                 {
-                    return new Vector2(x + m_chunk.x * TerrainChunk.SIZE, y + m_chunk.y * TerrainChunk.SIZE);
+                    return new Vector2((x + m_chunk.x * TerrainChunk.SIZE) + 0.5f - TerrainChunk.SIZE / 2, 
+                                       (y + m_chunk.y * TerrainChunk.SIZE) + 0.5f - TerrainChunk.SIZE / 2);
                 }
             }
 

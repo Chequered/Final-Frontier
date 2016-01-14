@@ -2,14 +2,15 @@
 
 using UnityEngine;
 
-using FinalFrontier.UI;
-using FinalFrontier.UI.Internal;
-using FinalFrontier.Serialization;
-using FinalFrontier.Terrain;
-using FinalFrontier.Entities;
-using FinalFrontier.Managers.Base;
+using EndlessExpedition.UI;
+using EndlessExpedition.UI.Internal;
+using EndlessExpedition.Serialization;
+using EndlessExpedition.Terrain;
+using EndlessExpedition.Entities;
+using EndlessExpedition.Managers.Base;
+using EndlessExpedition.Entities.BuildingModules;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Managers
     {
@@ -38,6 +39,7 @@ namespace FinalFrontier
                 list.AddButton(new ActionButton("Quick Save", ManagerInstance.Get<GameManager>().Save));
                 list.AddButton(new ActionButton("Quick Load", ManagerInstance.Get<GameManager>().Load));
                 list.AddButton(new ActionButton("Sim Tick", ManagerInstance.Get<SimulationManager>().SimulationTick));
+                //list.AddButton(new ActionButton("Resume All Production", ResumeAllProduction));
                 list.BuildUI();
                 AddUI(list);
 
@@ -141,6 +143,17 @@ namespace FinalFrontier
                 get
                 {
                     return GameObject.FindGameObjectWithTag("UI").GetComponent<RectTransform>().sizeDelta;
+                }
+            }
+
+            //Private Actionmenu methods
+            private void ResumeAllProduction()
+            {
+                Building[] buildings = ManagerInstance.Get<EntityManager>().FindAll<Building>();
+                for (int i = 0; i < buildings.Length; i++)
+                {
+                    if (buildings[i].GetModule<ProductionModule>() != null)
+                        buildings[i].GetModule<ProductionModule>().TogglePause(false);
                 }
             }
         }

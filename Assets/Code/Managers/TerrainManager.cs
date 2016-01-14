@@ -6,14 +6,14 @@ using System.IO;
 
 using UnityEngine;
 
-using FinalFrontier.Entities;
-using FinalFrontier.Terrain;
-using FinalFrontier.Terrain.Generation;
-using FinalFrontier.Serialization;
-using FinalFrontier.Graphics;
-using FinalFrontier.Managers.Base;
+using EndlessExpedition.Entities;
+using EndlessExpedition.Terrain;
+using EndlessExpedition.Terrain.Generation;
+using EndlessExpedition.Serialization;
+using EndlessExpedition.Graphics;
+using EndlessExpedition.Managers.Base;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Managers
     {

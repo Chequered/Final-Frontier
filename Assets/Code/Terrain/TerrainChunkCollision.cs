@@ -1,8 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections;
-using FinalFrontier.Terrain;
+using EndlessExpedition.Terrain;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Terrain
     {

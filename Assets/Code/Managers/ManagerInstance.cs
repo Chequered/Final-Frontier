@@ -1,10 +1,10 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
-using FinalFrontier.Serialization;
-using FinalFrontier.Managers.Base;
+using EndlessExpedition.Serialization;
+using EndlessExpedition.Managers.Base;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Managers
     {

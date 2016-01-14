@@ -3,10 +3,10 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-using FinalFrontier.Managers;
-using FinalFrontier.Entities;
+using EndlessExpedition.Managers;
+using EndlessExpedition.Entities;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace UI
     {

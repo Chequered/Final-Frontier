@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Managers.Base
     {

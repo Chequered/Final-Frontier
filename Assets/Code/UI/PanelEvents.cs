@@ -3,8 +3,8 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
-using FinalFrontier.Managers;
-namespace FinalFrontier
+using EndlessExpedition.Managers;
+namespace EndlessExpedition
 {
     namespace UI
     {

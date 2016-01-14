@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Components
     {

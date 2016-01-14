@@ -2,9 +2,9 @@
 
 using UnityEngine;
 
-using FinalFrontier.Managers;
-using FinalFrontier.UI;
-using FinalFrontier.Serialization;
+using EndlessExpedition.Managers;
+using EndlessExpedition.UI;
+using EndlessExpedition.Serialization;
 
 public enum GameState
 {
@@ -45,7 +45,7 @@ public class Main : MonoBehaviour {
         ManagerInstance.OnStart();
 
         //DEBUG: move cam to middle of level
-        int center = TerrainManager.WORLD_WIDTH * FinalFrontier.Terrain.TerrainChunk.SIZE / 2 - 8;
+        int center = TerrainManager.WORLD_WIDTH * EndlessExpedition.Terrain.TerrainChunk.SIZE / 2 - 8;
         Camera.main.transform.position = new Vector3(center, center, -20);
     }
 

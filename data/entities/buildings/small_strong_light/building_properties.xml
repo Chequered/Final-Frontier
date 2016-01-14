@@ -22,6 +22,6 @@
   </Property>
   <Property>
     <Key>lightStrength</Key>
-    <Value xsi:type="xsd:int">5</Value>
+    <Value xsi:type="xsd:int">3</Value>
   </Property>
   </ArrayOfProperty>

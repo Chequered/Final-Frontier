@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace Entities
     {
@@ -39,7 +39,7 @@ namespace FinalFrontier
 
             private void Update()
             {
-                if(FinalFrontier.Managers.GameManager.gameState == GameState.Playing)
+                if(EndlessExpedition.Managers.GameManager.gameState == GameState.Playing)
                 {
                     if(Input.GetMouseButtonUp(0))
                     {

@@ -3,9 +3,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-using FinalFrontier.Serialization;
+using EndlessExpedition.Serialization;
 
-namespace FinalFrontier
+namespace EndlessExpedition
 {
     namespace UI.MainMenu
     {
