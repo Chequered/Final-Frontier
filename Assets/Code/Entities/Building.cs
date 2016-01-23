@@ -37,7 +37,7 @@ namespace EndlessExpedition
 
                 if(properties.Has("produces"))
                 {
-                    AddModule(new ProductionModule(this));
+                    AddModule(new ProductionModule());
                 }
 
                 #region Building menus
@@ -46,7 +46,6 @@ namespace EndlessExpedition
                 debugMenu.buttonSize = new Vector2(100, 30);
                 debugMenu.AddButton(new ActionButton("Close", debugMenu.Toggle));
                 debugMenu.menuName = properties.Get<string>("displayName") + ": Debug Menu";
-                debugMenu.position = new Vector3(Screen.width - debugMenu.windowSize.x, 0);
                 debugMenu.BuildUI();
                 debugMenu.Toggle(false);
                 ManagerInstance.Get<UIManager>().AddUI(debugMenu);
@@ -56,18 +55,7 @@ namespace EndlessExpedition
                     debugMenu.AddButton(new ActionButton("Toggle Pause", GetModule<ProductionModule>().TogglePause));
 
                 #endregion
-                #region Status Icons
-                m_localCanvas = new GameObject("Local Canvas");
-                Canvas canvas = m_localCanvas.AddComponent<Canvas>();
-                RectTransform transform = m_localCanvas.GetComponent<RectTransform>();
-
-                canvas.renderMode = RenderMode.WorldSpace;
-
-                transform.position = new Vector3(0, 0);
-                transform.sizeDelta = new Vector2(1, 1);
-                transform.SetParent(p_gameObject.transform, false);
-
-                #endregion
+                GenerateIconObject();
                 GenerateLight();
             }
 
@@ -97,6 +85,24 @@ namespace EndlessExpedition
             }
 
             #region Modules
+            private void GenerateModules()
+            {
+                string moduleProperty = properties.Get<string>("buildingModules");
+                if (moduleProperty == null)
+                    return;
+
+                string[] modules = moduleProperty.Split('/');
+
+                for (int i = 0; i < modules.Length; i++)
+                {
+                    BuildingModule module = BuildingModule.FindModule(modules[i]);
+                    if(module != null)
+                    {
+                        AddModule(module);
+                        Debug.Log(module.identity);
+                    }
+                }
+            }
             public void RemoveModule(BuildingModule module)
             {
                 if (m_modules.Contains(module))
@@ -105,6 +111,7 @@ namespace EndlessExpedition
             public void AddModule(BuildingModule module)
             {
                 m_modules.Add(module);
+                module.building = this;
                 module.OnStart();
             }
             public T GetModule<T>() where T : BuildingModule
@@ -126,6 +133,19 @@ namespace EndlessExpedition
             #endregion
 
             #region Status icons methods
+            public void GenerateIconObject()
+            {
+                m_localCanvas = new GameObject("Local Canvas");
+                Canvas canvas = m_localCanvas.AddComponent<Canvas>();
+                RectTransform transform = m_localCanvas.GetComponent<RectTransform>();
+
+                canvas.renderMode = RenderMode.WorldSpace;
+
+                transform.position = new Vector3(0, 0);
+                transform.sizeDelta = new Vector2(1, 1);
+                transform.SetParent(p_gameObject.transform, false);
+            }
+
             public void AddStatusIcon(string statusIdentity, Sprite icon)
             {
                 GameObject icObj = new GameObject(statusIdentity);

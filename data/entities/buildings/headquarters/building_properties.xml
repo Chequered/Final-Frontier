@@ -16,4 +16,8 @@
     <Key>maxBuildingAmount</Key>
     <Value xsi:type="xsd:int">1</Value>
   </Property>
+  <Property>
+    <Key>buildingModules</Key>
+    <Value xsi:type="xsd:string">SkybotModule</Value>
+  </Property>
 </ArrayOfProperty>

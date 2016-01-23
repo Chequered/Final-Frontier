@@ -20,7 +20,6 @@ namespace EndlessExpedition
             public override void OnStart()
             {
                 ManagerInstance.Get<InputManager>().AddEventListener(InputPressType.Up, KeyCode.F8, Save);
-                ManagerInstance.Get<InputManager>().AddEventListener(InputPressType.Up, KeyCode.F4, MakeTransportBot);
             }
 
             public override void OnTick()
@@ -58,11 +57,6 @@ namespace EndlessExpedition
             public void Load()
             {
 
-            }
-
-            private void MakeTransportBot()
-            {
-                ManagerInstance.Get<EntityManager>().CreateEntity<Actor>(ManagerInstance.Get<EntityManager>().Find<Actor>("skybotTransportSmall"), 56, 56, new EntityBehaviourScript[] {new SkybotHover(), new SkybotTrailParticles()});
             }
 
             public static GameState gameState

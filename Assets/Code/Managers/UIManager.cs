@@ -41,6 +41,7 @@ namespace EndlessExpedition
                 list.AddButton(new ActionButton("Sim Tick", ManagerInstance.Get<SimulationManager>().SimulationTick));
                 //list.AddButton(new ActionButton("Resume All Production", ResumeAllProduction));
                 list.BuildUI();
+                list.position = new Vector2(0, Screen.height - list.windowSize.y);
                 AddUI(list);
 
                 EssentialsDisplayBar bar = new EssentialsDisplayBar();

@@ -1,9 +1,11 @@
-﻿using System.Collections;
+﻿using System.Collections.Generic;
+using System.Reflection;
+using System.Linq;
+using System;
 
 using UnityEngine;
 
 using EndlessExpedition.Managers;
-using EndlessExpedition.UI;
 using EndlessExpedition.Serialization;
 
 public enum GameState
@@ -37,7 +39,10 @@ public class Main : MonoBehaviour {
             GameManager.gameState = GameState.LoadingSave;
         else
             GameManager.gameState = GameState.LoadingNew;
-        
+
+        //Setup mod refs
+        EndlessExpedition.Entities.BuildingModules.BuildingModule.SearchModules();
+
         //Load Managers
         ManagerInstance.OnLoad();
 
@@ -83,5 +88,17 @@ public static class Extensions
         bool isDefault = value.Equals(default(T));
 
         return isDefault;
+    }
+
+    public static List<Type> GetListOfType<T>() where T : class
+    {
+        List<Type> types = new List<Type>();
+        foreach (Type type in
+            Assembly.GetAssembly(typeof(T)).GetTypes()
+            .Where(myType => myType.IsClass && !myType.IsAbstract && myType.IsSubclassOf(typeof(T))))
+        {
+            types.Add(type);
+        }
+        return types;
     }
 }

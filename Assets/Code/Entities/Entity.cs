@@ -66,6 +66,7 @@ namespace EndlessExpedition
             //References
             protected EntityManager p_EM;
             protected GameObject p_gameObject;
+            private List<int> m_behaviourScriptIDs;
 
             //Properties & Graphics
             protected Properties p_properties;
@@ -104,6 +105,8 @@ namespace EndlessExpedition
                     OnStartEvent(this);
 
                 p_UIGroup = new EntityUIGroup();
+                OnSelectEvent += ToggleSelectionEmission;
+                OnDeselectEvent += ToggleSelectionEmission;
 
                 #region Read properties
                 if (properties.Has("itemContainerSlots"))
@@ -116,10 +119,11 @@ namespace EndlessExpedition
                     ItemContainerDisplay containerDisplay = new ItemContainerDisplay(itemContainer);
                     containerDisplay.BuildUI();
                     containerDisplay.Toggle(false);
+                    containerDisplay.scale = new Vector2(1.25f, 1.25f);
                     ManagerInstance.Get<UIManager>().AddUI(containerDisplay);
                     p_UIGroup.AddUIElement(containerDisplay);
 
-                    containerDisplay.position = new Vector2(Screen.width / 2 + containerDisplay.windowSize.x, Screen.height / 2 + containerDisplay.windowSize.y);
+                    containerDisplay.position = new Vector2(Screen.width -containerDisplay.windowSize.x, 0);
                 }
                 #endregion
             }
@@ -147,15 +151,13 @@ namespace EndlessExpedition
             /// </summary>
             public virtual void OnLoad()
             {
-
+                m_behaviourScriptIDs = new List<int>();
             }
 
             public virtual void OnSelect()
             {
                 //ManagerInstance.Get<UIManager>().propertyInspector.SetInspectingEntity(this);
                 m_selected = true;
-
-                gameObject.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.25f, 0.25f, 0.25f));
 
                 if (OnSelectEvent != null)
                     OnSelectEvent(this, true);
@@ -168,13 +170,21 @@ namespace EndlessExpedition
                 //ManagerInstance.Get<UIManager>().propertyInspector.Close();
                 m_selected = false;
 
-                gameObject.GetComponent<Renderer>().material.SetColor("_EmissionColor", Color.black);
 
                 if (OnDeselectEvent != null)
                     OnDeselectEvent(this, false);
 
                 p_UIGroup.Toggle(false);
             }
+
+            public void Destroy()
+            {
+                if (OnDestroyEvent != null)
+                    OnDestroyEvent(this);
+
+                ManagerInstance.Get<EntityManager>().DestroyEntity(this);
+            }
+
 
             //Unity Events
             public virtual void OnMouseOver()
@@ -191,15 +201,7 @@ namespace EndlessExpedition
             {
                 p_mouseOver = false;
             }
-
-            //Property Handlers
-            public void AddItemContainerSpace(int slots)
-            {
-                if (m_itemContainer == null)
-                    m_itemContainer = new ItemContainer(slots);
-                else
-                    m_itemContainer.AddSlots(slots);
-            }
+            
 
             #region Generation methods
             public void GenerateCollision()
@@ -290,7 +292,13 @@ namespace EndlessExpedition
                 return result;
             }
             #endregion
-            //Position
+            public void AddItemContainerSpace(int slots)
+            {
+                if (m_itemContainer == null)
+                    m_itemContainer = new ItemContainer(slots);
+                else
+                    m_itemContainer.AddSlots(slots);
+            }
             public virtual void GoToGamePos(float x, float y, float z, bool forceStatic = false)
             {
                 if (p_properties.Has("movementMode") && !forceStatic)
@@ -304,8 +312,23 @@ namespace EndlessExpedition
                     (y - EndlessExpedition.Terrain.TerrainChunk.SIZE / 2) + ((float)GetGraphics().tileHeight / 2),
                     z);
             }
+            public void ToggleSelectionEmission(Entity entity, bool state)
+            {
+                if (state)
+                {
+                    gameObject.GetComponent<Renderer>().material.SetColor("_EmissionColor", new Color(0.25f, 0.25f, 0.25f));
+                    gameObject.GetComponent<Renderer>().material.EnableKeyword("_EMISSION");
+                }
+                else
+                {
+                    gameObject.GetComponent<Renderer>().material.SetColor("_EmissionColor", Color.black);
+                    gameObject.GetComponent<Renderer>().material.DisableKeyword("_EMISSION");
+                }
+
+            }
 
             //Getters & Setters
+            #region Getters & Setters
             public Properties properties
             {
                 get
@@ -388,10 +411,18 @@ namespace EndlessExpedition
                     return m_itemContainer;
                 }
             }
+            public int[] behaviourScriptIDs
+            {
+                get
+                {
+                    return m_behaviourScriptIDs.ToArray();
+                }
+            }
+
 
             public abstract GraphicsBase GetGraphics();
             public abstract void SetGraphics(GraphicsBase graphics);
-
+            #endregion
             //static helpers
             public static Vector2 ConvertGameToUnityPosition(Vector2 tilePosition, int tileWidth, int tileHeight)
             {

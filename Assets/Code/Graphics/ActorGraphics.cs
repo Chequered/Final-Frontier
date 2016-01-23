@@ -57,9 +57,11 @@ namespace EndlessExpedition
             //LineRenderer
             public void InitializeMovementLine()
             {
+                Color lineColor = new Color(55, 55, 55, 0.55f);
                 m_lineRenderer = m_actor.gameObject.AddComponent<LineRenderer>();
+                m_lineRenderer.material.shader = Shader.Find("Unlit/Transparent");
                 m_lineRenderer.SetVertexCount(2);
-                m_lineRenderer.SetColors(Color.white, Color.white);
+                m_lineRenderer.SetColors(lineColor, lineColor);
                 m_lineRenderer.enabled = false;
                 m_lineRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 m_lineRenderer.receiveShadows = false;

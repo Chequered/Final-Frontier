@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Reflection;
+using System;
 
 using UnityEngine;
 
@@ -6,20 +8,47 @@ using EndlessExpedition.Items;
 using EndlessExpedition.Serialization;
 using EndlessExpedition.Managers;
 using EndlessExpedition.Graphics;
+using EndlessExpedition.Entities.BehvaiourScripts;
 
 namespace EndlessExpedition
 {
     namespace Entities.BuildingModules
     {
-        public abstract class BuildingModule
+        public abstract class BuildingModule : IComparable
         {
-            protected Building p_building;
+            private static List<Type> m_moduleTypes;
 
-            public BuildingModule(Building building)
+            public static void SearchModules()
             {
-                p_building = building;
+                m_moduleTypes = Extensions.GetListOfType<BuildingModule>();
+            }
+            public static BuildingModule FindModule(string moduleName)
+            {
+                BuildingModule result = null;
+
+                Type t = null;
+                for (int i = 0; i < m_moduleTypes.Count; i++)
+                {
+                    Debug.Log(moduleName + " == " + m_moduleTypes[i].ToString());
+                    if (moduleName == m_moduleTypes[i].ToString())
+                    {
+                        t = m_moduleTypes[i];
+                        break;
+                    }
+                }
+
+                if(t == null)
+                {
+                    return null;
+                    throw new Exception("Building module not found");
+                }
+
+                result = Activator.CreateInstance(t) as BuildingModule;
+
+                return result;
             }
 
+            protected Building p_building;
             public abstract void OnStart();
             public abstract void OnTick();
             public abstract void OnUpdate();
@@ -29,16 +58,29 @@ namespace EndlessExpedition
             {
 
             }
+            public int CompareTo(object obj)
+            {
+                if (obj == null)
+                    return 1;
+
+                BuildingModule BM = obj as BuildingModule;
+                return BM.identity.CompareTo(this.identity);
+            }
 
             public abstract string identity
             {
                 get;
             }
+
             public Building building
             {
                 get
                 {
                     return p_building;
+                }
+                set
+                {
+                    p_building = value;
                 }
             }
         }
@@ -51,7 +93,7 @@ namespace EndlessExpedition
             private int m_currentProductionIndex = 0;
             private bool m_productionPaused = false;
 
-            public ProductionModule(Building building) : base(building)
+            public ProductionModule()
             {
                 m_productionResult = new List<KeyValuePair<Item, int>>();
                 m_productionRequirements = new Dictionary<Item, int>();
@@ -262,8 +304,46 @@ namespace EndlessExpedition
             {
                 get { return "productionModule"; }
             }
-
-
         }
+
+        public class SkybotModule : BuildingModule
+        {
+            private Actor m_skybot;
+
+            public SkybotModule()
+            {
+
+            }
+
+            public override string identity
+            {
+                get
+                {
+                    return "skybotModule";
+                }
+            }
+
+            public override void OnModuleRemove()
+            {
+                m_skybot.Destroy();
+            }
+
+            public override void OnStart()
+            {
+                m_skybot = ManagerInstance.Get<EntityManager>().CreateEntity<Actor>(ManagerInstance.Get<EntityManager>().Find<Actor>("skybotTransportSmall"), building.unityPosition.x, building.unityPosition.y, 
+                    new EntityBehaviourScript[] { new SkybotHover(), new SkybotTrailParticles() }) as Actor;
+            }
+
+            public override void OnTick()
+            {
+
+            }
+
+            public override void OnUpdate()
+            {
+
+            }
+        }
+
     }
 }

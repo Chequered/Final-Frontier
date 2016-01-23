@@ -23,6 +23,7 @@ namespace EndlessExpedition
                 Vector2 position { get; set; }
                 Vector2 windowSize { get; set; }
                 RectTransform transform { get; }
+                Vector2 scale { get; set; }
             }
 
             public interface IInventoryDisplay : IUI
@@ -54,7 +55,6 @@ namespace EndlessExpedition
         public interface IItemContainerDisplay : IInventoryDisplay
         {
             ItemContainer itemContainer { get; set; }
-            Vector2 gridSize { get; set; }
         }
 
         //displays
@@ -289,12 +289,22 @@ namespace EndlessExpedition
                     throw new System.NotImplementedException();
                 }
             }
-
             public RectTransform transform
             {
                 get
                 {
                     return m_gameObject.GetComponent<RectTransform>();
+                }
+            }
+            public Vector2 scale
+            {
+                get
+                {
+                    return m_transform.localScale;
+                }
+                set
+                {
+                    m_transform.localScale = value;
                 }
             }
         }
@@ -314,8 +324,6 @@ namespace EndlessExpedition
             private CanvasGroup m_group;
             private GridLayoutGroup m_layout;
 
-            private Vector2 m_gridSize;
-
             public ItemContainerDisplay(ItemContainer itemContainer)
             {
                 this.itemContainer = itemContainer;
@@ -331,8 +339,6 @@ namespace EndlessExpedition
 
                 m_elementPrefab = Resources.Load("UI/ItemElement") as GameObject;
                 m_elementTransform = m_elementPrefab.GetComponent<RectTransform>();
-
-                m_gridSize = new Vector2(itemContainer.GetAllStacks().Length / 2, itemContainer.GetAllStacks().Length / 2);
             }
 
             public void UpdateUI() { }
@@ -354,8 +360,17 @@ namespace EndlessExpedition
 
             public void BuildUI()
             {
-                float xSize = ((m_elementTransform.rect.width + m_layout.padding.left) * gridSize.x) + m_layout.padding.right;
-                float ySize = ((m_elementTransform.rect.height + m_layout.padding.top) * gridSize.y) + m_layout.padding.top;
+                int items = itemContainer.GetAllStacks().Length;
+                int rows = Mathf.CeilToInt((float)items / (float)5);
+
+                float xSize = 0;
+                float ySize = 0;
+
+                if (rows > 1)
+                    xSize = ((m_elementTransform.rect.width + m_layout.padding.left) * 5) + m_layout.padding.right;
+                else
+                    xSize = ((m_elementTransform.rect.width + m_layout.padding.left) * itemContainer.GetAllStacks().Length) + m_layout.padding.right;
+                ySize = ((m_elementTransform.rect.height + m_layout.padding.top) * rows) + m_layout.padding.top;
                 m_transform.sizeDelta = new Vector2(xSize, ySize);
 
                 for (int i = 0; i < itemContainer.GetAllStacks().Length; i++)
@@ -432,29 +447,32 @@ namespace EndlessExpedition
             {
                 get
                 {
-                    return m_transform.sizeDelta;
+                    Vector2 actualSize = new Vector2();
+                    actualSize.x = m_transform.sizeDelta.x * m_transform.localScale.x;
+                    actualSize.y = m_transform.sizeDelta.y * m_transform.localScale.y;
+                    return actualSize;
                 }
                 set
                 {
                     m_transform.sizeDelta = value;
                 }
             }
-            public Vector2 gridSize
-            {
-                get
-                {
-                    return m_gridSize;
-                }
-                set
-                {
-                    m_gridSize = value;
-                }
-            }
             public RectTransform transform
             {
                 get
                 {
-                    return m_gameObject.GetComponent<RectTransform>();
+                    return m_transform;
+                }
+            }
+            public Vector2 scale
+            {
+                get
+                {
+                    return m_transform.localScale;
+                }
+                set
+                {
+                    m_transform.localScale = new Vector3(value.x, value.y, 1);
                 }
             }
         }
@@ -595,6 +613,17 @@ namespace EndlessExpedition
                 get
                 {
                     return m_gameObject.GetComponent<RectTransform>();
+                }
+            }
+            public Vector2 scale
+            {
+                get
+                {
+                    return m_transform.localScale;
+                }
+                set
+                {
+                    m_transform.localScale = value;
                 }
             }
         }

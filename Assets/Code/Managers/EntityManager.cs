@@ -121,7 +121,7 @@ namespace EndlessExpedition
                 throw new NotImplementedException();
             }
 
-            public Entity CreateEntity<T>(Entity entityPrefab, int x, int y, EntityBehaviourScript[] behaviourScripts = null) where T : Entity
+            public Entity CreateEntity<T>(Entity entityPrefab, float x, float y, EntityBehaviourScript[] behaviourScripts = null) where T : Entity
             {
                 if (GameManager.gameState != GameState.StartingNew && GameManager.gameState != GameState.Playing && GameManager.gameState != GameState.StartingSave)
                     Debug.LogError("Creating entity in wrong gamestate");
@@ -136,7 +136,7 @@ namespace EndlessExpedition
 			        {
 			            for (int sY = 0; sY < tileHeight; sY++)
 			            {
-			                if(m_entityPlacementMap.GetDataAt(x + sX, y + sY))
+			                if(m_entityPlacementMap.GetDataAt(((int)x) + sX, ((int)y) + sY))
                             {
                                 allowed = false;
                                 break;
@@ -151,7 +151,7 @@ namespace EndlessExpedition
                 {
                     for (int sY = 0; sY < tileHeight; sY++)
                     {
-                        m_entityPlacementMap.SetDataAt(x + sX, y + sY, true);
+                        m_entityPlacementMap.SetDataAt(((int)x) + sX, ((int)y) + sY, true);
                     }
                 }
                 m_entityPlacementMap.ApplyAllOverlays();
@@ -211,6 +211,27 @@ namespace EndlessExpedition
                 newEntity.OnStart();
 
                 return newEntity;
+            }
+
+            public void DestroyEntity(Entity entity)
+            {
+                if (m_entities.Contains(entity))
+                {
+                    //Deselect entity (just in case)
+                    entity.OnDeselect();
+
+                    //Remove behaviour scripts
+                    int[] ids = entity.behaviourScriptIDs;
+                    for (int i = 0; i < ids.Length; i++)
+                    {
+                        UnregisterEntityBehaviourScript(m_entityBehaviourScripts[ids[i]]);
+                    }
+
+                    //Remove reference & destroy gameobject
+                    m_entities.Remove(entity);
+                    entity.gameObject.AddComponent<GameObjectDestroyer>().Destroy();
+                }
+
             }
 
             public void UnregisterEntity(Entity entity)

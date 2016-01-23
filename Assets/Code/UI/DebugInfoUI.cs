@@ -1,6 +1,7 @@
 ﻿using System;
 
 using UnityEngine;
+using UnityEngine.UI;
 
 using EndlessExpedition.Managers;
 
@@ -15,6 +16,7 @@ namespace EndlessExpedition
             private float m_deltaTime = 0;
             private double m_timeToNextTick = 0;
             private GUISkin m_skin;
+            private bool m_enabled;
 
             private void Start()
             {
@@ -22,7 +24,11 @@ namespace EndlessExpedition
                 UpdateSimTickTime();
                 m_skin = ScriptableObject.CreateInstance<GUISkin>();
                 m_skin.label.fontSize = 14;
+                m_skin.label.alignment = TextAnchor.MiddleRight;
+                m_skin.label.fixedWidth = Screen.width;
                 m_skin.label.normal.textColor = Color.white;
+
+                ManagerInstance.Get<InputManager>().AddEventListener(InputPressType.Up, KeyCode.F3, Toggle);
             }
 
             private void Update()
@@ -32,6 +38,9 @@ namespace EndlessExpedition
 
             private void OnGUI()
             {
+                if (!m_enabled)
+                    return;
+
                 GUI.skin = m_skin;
                 if(m_fps > 60)
                     GUILayout.Label("<b>FPS:</b> <color=#00FF00>" + m_fps + "</color> " + m_ms + " ms");
@@ -42,6 +51,26 @@ namespace EndlessExpedition
                 GUILayout.Label("<b>Loaded Entities: </b>" + ManagerInstance.Get<EntityManager>().cachedEntityCount);
                 GUILayout.Label("<b>Active Entities: </b>" + ManagerInstance.Get<EntityManager>().activeEntityCount);
             }
+
+            private void Toggle()
+            {
+                m_enabled = !m_enabled;
+
+                if (m_enabled)
+                {
+                    Image i = GameObject.Find("ScreenOverlay").GetComponent<Image>();
+                    Color c = i.color; c.a = 0.25f;
+                    i.color = c;
+                }
+                else
+                {
+                    Image i = GameObject.Find("ScreenOverlay").GetComponent<Image>();
+                    Color c = i.color; c.a = 0;
+                    i.color = c;
+                }
+
+            }
+
 
             private void UpdateFramerate()
             {
