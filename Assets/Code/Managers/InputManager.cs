@@ -5,6 +5,8 @@ using UnityEngine;
 using EndlessExpedition.UI;
 using EndlessExpedition.Terrain;
 using EndlessExpedition.Managers.Base;
+using EndlessExpedition.Items;
+using EndlessExpedition.Entities;
 
 namespace EndlessExpedition
 {
@@ -21,6 +23,7 @@ namespace EndlessExpedition
         public class InputManager : ManagerBase
         {
             public static float doubleClickTimeout = 0.4f;
+            public static bool isTypingInInputField;
 
             //key
             public delegate void OnKeyPressedHandler();
@@ -36,6 +39,13 @@ namespace EndlessExpedition
             private List<KeyValuePair<int, OnClickPressHandler>> m_clickedDoubleEvents;
 
             private List<float> m_clickTimers;
+
+            //items
+            private ItemStackTransferInfo m_currentMovingItemStack;
+            private static bool m_isMouseOverItemSlot;
+
+            //Entities
+            private Entity m_selectedEntity;
 
             public void AddEventListener(InputPressType type, KeyCode keyCode, OnKeyPressedHandler eventHandler)
             {
@@ -115,41 +125,32 @@ namespace EndlessExpedition
             }
             public void RemoveEventListener(InputPressType type, int mouseButton, OnClickPressHandler eventHandler)
             {
+                List<KeyValuePair<int, OnClickPressHandler>> list = null;
                 switch (type)
                 {
                     case InputPressType.Down:
-                        for (int i = 0; i < m_clickedDownEvents.Count; i++)
-                        {
-                            if (m_clickedDownEvents[i].Key == mouseButton)
-                                if (m_clickedDownEvents[i].Value == eventHandler)
-                                {
-                                    m_clickedDownEvents.RemoveAt(i);
-                                    return;
-                                }
-                        }
+                        list = m_clickedDownEvents;
                         break;
                     case InputPressType.Up:
-                        for (int i = 0; i < m_clickedUpEvents.Count; i++)
-                        {
-                            if (m_clickedUpEvents[i].Key == mouseButton)
-                                if (m_clickedUpEvents[i].Value == eventHandler)
-                                {
-                                    m_clickedUpEvents.RemoveAt(i);
-                                    return;
-                                }
-                        }
+                        list = m_clickedUpEvents;
                         break;
                     case InputPressType.Held:
-                        for (int i = 0; i < m_clickedHeldEvents.Count; i++)
-                        {
-                            if (m_clickedHeldEvents[i].Key == mouseButton)
-                                if (m_clickedHeldEvents[i].Value == eventHandler)
-                                {
-                                    m_clickedHeldEvents.RemoveAt(i);
-                                    return;
-                                }
-                        }
+                        list = m_clickedHeldEvents;
                         break;
+                }
+                if(list != null)
+                {
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        if (list[i].Key == mouseButton)
+                        {
+                            if (list[i].Value == eventHandler)
+                            {
+                                list.RemoveAt(i);
+                                return;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -225,6 +226,39 @@ namespace EndlessExpedition
 
             public override void OnUpdate()
             {
+                if (Input.GetMouseButtonUp(0) && GameManager.gameState == GameState.Playing && !isMouseOverUI)
+                {
+                    Transform hitTransform = null;
+
+                    RaycastHit hit;
+                    Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                    
+                    if (Physics.Raycast(ray, out hit, 500, LayerMask.GetMask("Actor")))
+                    {
+                        hitTransform = hit.transform;
+                    }
+                    else if (Physics.Raycast(ray, out hit, 500, LayerMask.GetMask("Building")))
+                    {
+                        hitTransform = hit.transform;
+                    }
+                    else if (Physics.Raycast(ray, out hit, 500, LayerMask.GetMask("Prop")))
+                    {
+                        hitTransform = hit.transform;
+                    }
+
+                    if (hitTransform != null)
+                    {
+                        if (m_selectedEntity != null)
+                            m_selectedEntity.OnDeselect();
+                        hitTransform.GetComponent<EntityCollision>().OnClick();
+                        m_selectedEntity = hitTransform.GetComponent<EntityCollision>().entity;
+                    }
+                    else if (m_selectedEntity != null)
+                    {
+                        m_selectedEntity.OnDeselect();
+                        m_selectedEntity = null;
+                    }
+                }
             }
 
             public override void OnLoad()
@@ -251,8 +285,9 @@ namespace EndlessExpedition
                 {
                     Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
                     RaycastHit hit;
+                    LayerMask mask = LayerMask.GetMask("Terrain");
 
-                    if (Physics.Raycast(ray, out hit, LayerMask.GetMask("Terrain") << 1))
+                    if (Physics.Raycast(ray, out hit, 500, mask))
                     {
                         Vector3 mouseHit = hit.transform.InverseTransformPoint(hit.point);
                         int x = (int)Mathf.Floor(TerrainChunk.SIZE * (mouseHit.x + 0.5f));
@@ -265,11 +300,34 @@ namespace EndlessExpedition
                 }
             }
 
+            public ItemStackTransferInfo currentMovingItemstack
+            {
+                get
+                {
+                    return m_currentMovingItemStack;
+                }
+                set
+                {
+                    m_currentMovingItemStack = value;
+                }
+            }
+
             public static bool isMouseOverUI
             {
                 get
                 {
                     return UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject();
+                }
+            }
+            public static bool isMouseOverItemSlot
+            {
+                get
+                {
+                    return m_isMouseOverItemSlot;
+                }
+                set
+                {
+                    m_isMouseOverItemSlot = value;
                 }
             }
         }

@@ -17,6 +17,7 @@ namespace EndlessExpedition
         public abstract class BuildingModule : IComparable
         {
             private static List<Type> m_moduleTypes;
+            private bool m_paused;
 
             public static void SearchModules()
             {
@@ -29,8 +30,7 @@ namespace EndlessExpedition
                 Type t = null;
                 for (int i = 0; i < m_moduleTypes.Count; i++)
                 {
-                    Debug.Log(moduleName + " == " + m_moduleTypes[i].ToString());
-                    if (moduleName == m_moduleTypes[i].ToString())
+                    if (moduleName == m_moduleTypes[i].Name.ToString())
                     {
                         t = m_moduleTypes[i];
                         break;
@@ -56,7 +56,11 @@ namespace EndlessExpedition
 
             public virtual void TogglePause()
             {
-
+                m_paused = !m_paused;
+            }
+            public virtual void TogglePause(bool state)
+            {
+                m_paused = state;
             }
             public int CompareTo(object obj)
             {
@@ -64,15 +68,14 @@ namespace EndlessExpedition
                     return 1;
 
                 BuildingModule BM = obj as BuildingModule;
-                return BM.identity.CompareTo(this.identity);
+                return BM.Identity.CompareTo(this.Identity);
             }
 
-            public abstract string identity
+            public abstract string Identity
             {
                 get;
             }
-
-            public Building building
+            public Building Building
             {
                 get
                 {
@@ -81,6 +84,13 @@ namespace EndlessExpedition
                 set
                 {
                     p_building = value;
+                }
+            }
+            public bool Paused
+            {
+                get
+                {
+                    return m_paused;
                 }
             }
         }
@@ -101,7 +111,7 @@ namespace EndlessExpedition
 
             public override void OnStart()
             {
-                Properties p = building.properties;
+                Properties p = Building.properties;
                 if(p.Has("produces"))
                 {
                     string[] produces = p.Get<string>("produces").Split('/');
@@ -114,9 +124,9 @@ namespace EndlessExpedition
                             {
                                 m_productionResult.Add(new KeyValuePair<Item, int>(ManagerInstance.Get<ItemManager>().FindItem(split[0]), System.Convert.ToInt32(split[1])));
                             }
-                            catch (System.InvalidCastException e)
+                            catch (InvalidCastException e)
                             {
-                                Debug.LogError(e);
+                                CMD.Error(e);
                             }
                         }
                     }
@@ -134,7 +144,7 @@ namespace EndlessExpedition
                         try
                         {
                             m_productionRequirements.Add(ManagerInstance.Get<ItemManager>().FindItem(split[0]), System.Convert.ToInt32(split[1]));
-                        }catch(System.InvalidCastException e)
+                        }catch(InvalidCastException e)
                         {
                             Debug.LogError(e);
                         }
@@ -196,26 +206,27 @@ namespace EndlessExpedition
                 if (!result)
                 {
                     //production failed
-                    building.light.enabled = false;
+                    Building.light.enabled = false;
                     for (int i = 0; i < missing.Count; i++)
                     {
                         string identity = "missingRequirement:" + missing[i].Key.identity;
-                        if(!building.HasStatusIcon(identity))
+                        if(!Building.HasStatusIcon(identity))
                         {
-                            building.AddStatusIcon(identity, (missing[i].Key.GetGraphics() as ItemGraphics).GetIcon(ItemIconType.Deficit));
+                            Building.AddStatusIcon(identity, (missing[i].Key.GetGraphics() as ItemGraphics).GetIcon(ItemIconType.Deficit));
                         }
                     }
                 }
                 else
                 {
-                    building.light.enabled = true;
+                    if(ManagerInstance.Get<SimulationManager>().isNightTime)
+                        Building.light.enabled = true;
                     //production succes
                     foreach (var requirement in m_productionRequirements)
                     {
                         string identity = "missingRequirement:" + requirement.Key.identity;
-                        if(building.HasStatusIcon(identity))
+                        if(Building.HasStatusIcon(identity))
                         {
-                            building.RemoveStatusIcon(identity);
+                            Building.RemoveStatusIcon(identity);
                         }
                     }
                 }
@@ -226,7 +237,7 @@ namespace EndlessExpedition
             public override void OnModuleRemove()
             {
                 //TODO: Tell sim manager
-                building.RemoveModule(this);
+                Building.RemoveModule(this);
             }
 
             public KeyValuePair<Item, int>[] ProduceProducts()
@@ -263,7 +274,7 @@ namespace EndlessExpedition
                 }
             }
 
-            public ItemContainer itemContainer
+            public ItemContainer ItemContainer
             {
                 get
                 {
@@ -273,77 +284,39 @@ namespace EndlessExpedition
 
             public override void TogglePause()
             {
+                base.TogglePause();
                 m_productionPaused = !m_productionPaused;
                 if (m_productionPaused)
                 {
                     ManagerInstance.Get<SimulationManager>().UnregisterProductionModule(this);
-                    building.AddStatusIcon("productionPaused", Resources.Load<Sprite>("UI/icon_pause"));
+                    Building.AddStatusIcon("productionPaused", Resources.Load<Sprite>("UI/icon_pause"));
                 }
                 else
                 {
                     ManagerInstance.Get<SimulationManager>().RegisterProductionModule(this);
-                    building.RemoveStatusIcon("productionPaused");
+                    Building.RemoveStatusIcon("productionPaused");
                 }
             }
-            public void TogglePause(bool state)
+            public override void TogglePause(bool state)
             {
+                base.TogglePause(state);
                 m_productionPaused = state;
                 if (m_productionPaused)
                 {
                     ManagerInstance.Get<SimulationManager>().UnregisterProductionModule(this);
-                    building.AddStatusIcon("productionPaused", Resources.Load<Sprite>("UI/icon_pause"));
+                    Building.AddStatusIcon("productionPaused", Resources.Load<Sprite>("UI/icon_pause"));
                 }
                 else
                 {
                     ManagerInstance.Get<SimulationManager>().RegisterProductionModule(this);
-                    building.RemoveStatusIcon("productionPaused");
+                    Building.RemoveStatusIcon("productionPaused");
                 }
             }
 
-            public override string identity
+            public override string Identity
             {
                 get { return "productionModule"; }
             }
         }
-
-        public class SkybotModule : BuildingModule
-        {
-            private Actor m_skybot;
-
-            public SkybotModule()
-            {
-
-            }
-
-            public override string identity
-            {
-                get
-                {
-                    return "skybotModule";
-                }
-            }
-
-            public override void OnModuleRemove()
-            {
-                m_skybot.Destroy();
-            }
-
-            public override void OnStart()
-            {
-                m_skybot = ManagerInstance.Get<EntityManager>().CreateEntity<Actor>(ManagerInstance.Get<EntityManager>().Find<Actor>("skybotTransportSmall"), building.unityPosition.x, building.unityPosition.y, 
-                    new EntityBehaviourScript[] { new SkybotHover(), new SkybotTrailParticles() }) as Actor;
-            }
-
-            public override void OnTick()
-            {
-
-            }
-
-            public override void OnUpdate()
-            {
-
-            }
-        }
-
     }
 }

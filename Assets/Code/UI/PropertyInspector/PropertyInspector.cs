@@ -33,18 +33,6 @@ namespace EndlessExpedition
                 m_group = GetComponent<CanvasGroup>();
                 m_texts = new List<GameObject>();
                 m_textPrefab = Resources.Load("UI/PropertyInspectorLine") as GameObject;
-                ManagerInstance.Get<InputManager>().AddEventListener(InputPressType.Up, KeyCode.I, SwitchInspectMode);
-            }
-            
-            public void SetInspectingEntity(Entity entity)
-            {
-                if (m_inspectingEntity == entity)
-                    return;
-
-                InspectProperties(entity.properties);
-
-                m_inspectingEntity = entity;
-                EnableGroup();
             }
 
             public void InspectProperties(Properties properties)

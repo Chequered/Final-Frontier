@@ -22,6 +22,9 @@ namespace EndlessExpedition
 
         public class SimulationManager : ManagerBase
         {
+            private const int TIME_MAX_SECONDS = 60;
+            private const int TIME_MAX_MINUTES = 24;
+
             public delegate void SimulationTickStateEventHandler();
             public SimulationTickStateEventHandler OnSimulationBegin;
             public SimulationTickStateEventHandler OnSimulationEnd;
@@ -35,6 +38,11 @@ namespace EndlessExpedition
             private Dictionary<Item, int> m_availableEssentialsThisTick;
 
             private int m_simulationTicks;
+
+            private GameObject m_dirLight;
+            private float m_lastTimeCheck;
+            private int m_timeSeconds;
+            private int m_timeMinutes;
 
             public override void OnStart()
             {
@@ -56,6 +64,23 @@ namespace EndlessExpedition
                     SimulationTick();
                     m_deltaTimeLeftToNextTick = SIMULATION_DELTATIME_PER_TICK;
                 }
+
+                if (Time.time >= m_lastTimeCheck + 0.85f)
+                {
+                    m_lastTimeCheck = Time.time;
+                    m_timeSeconds++;
+                    m_dirLight.transform.localEulerAngles = new Vector3(0, ((360f / (24f * 60f)) * (m_timeMinutes * 60 + m_timeSeconds)) + 180f, 0);
+                    if (m_timeSeconds >= TIME_MAX_SECONDS)
+                    {
+                        m_timeSeconds = 0;
+                        m_timeMinutes++;
+                    }
+
+                    if (m_timeMinutes >= TIME_MAX_MINUTES)
+                    {
+                        m_timeMinutes = 0;
+                    }
+                }
             }
 
             public override void OnLoad()
@@ -63,6 +88,11 @@ namespace EndlessExpedition
                 m_registeredProductionModules = new List<ProductionModule>();
                 m_predictedEssentialsThisThick = new Dictionary<Item, int>();
                 m_availableEssentialsThisTick = new Dictionary<Item, int>();
+
+                m_dirLight = GameObject.FindGameObjectWithTag("Sun");
+                m_dirLight.transform.localEulerAngles = new Vector3(0, ((360f / (24f * 60f)) * (m_timeMinutes * m_timeSeconds)) + 180f, 0);
+                m_timeSeconds = 0;
+                m_timeMinutes = 10;
             }
 
             public override void OnExit()
@@ -70,6 +100,11 @@ namespace EndlessExpedition
                 throw new System.NotImplementedException();
             }
 
+            [ConsoleCommand("Forces a simulation tick to be processed")]
+            public static void CMDSimulationTick()
+            {
+                ManagerInstance.Get<SimulationManager>().SimulationTick();
+            }
             public void SimulationTick()
             {
                 if (OnSimulationBegin != null)
@@ -109,7 +144,7 @@ namespace EndlessExpedition
                             switch (requirement.Key.type)
                             {
                                 case ItemType.Item:
-                                    m_registeredProductionModules[m].itemContainer.TakeItems(requirement.Key, requirement.Value);
+                                    m_registeredProductionModules[m].ItemContainer.TakeItems(requirement.Key, requirement.Value);
                                     break;
                                 case ItemType.Currency:
                                     ManagerInstance.Get<ItemManager>().TakeCurrency(requirement.Key, requirement.Value);
@@ -135,13 +170,13 @@ namespace EndlessExpedition
                         switch (product.Key.type)
                         {
                             case ItemType.Item:
-                                if (allowedModules[m].building.itemContainer != null)
+                                if (allowedModules[m].Building.itemContainer != null)
                                 {
                                     MasterItemStack masterStack = new MasterItemStack(product.Key, product.Value);
-                                    allowedModules[m].building.itemContainer.AddFromProduction(masterStack);
+                                    allowedModules[m].Building.itemContainer.AddFromProduction(masterStack);
                                 }
                                 else
-                                    Debug.LogError("This Building Needs an ItemContainer!: " + allowedModules[m].building);
+                                    Debug.LogError("This Building Needs an ItemContainer!: " + allowedModules[m].Building);
                                 break;
                             case ItemType.Currency:
                                 ManagerInstance.Get<ItemManager>().AddCurrency(product.Key, product.Value);
@@ -235,6 +270,71 @@ namespace EndlessExpedition
                     Debug.Log(currency.Key.displayName + ": " + currency.Value);
                 }
                 Debug.Log("+-------------------------------------------------------+ ");
+            }
+
+            //Time
+            public void AdvanceOneHour()
+            {
+                SetTime(m_timeMinutes + 1, m_timeSeconds);
+            }
+            public void SetTime(int hours, int minutes)
+            {
+                if (hours > 24)
+                    hours = 24;
+                if (hours < 0)
+                    hours = 0;
+                if (minutes > 59)
+                    minutes = 59;
+                if (minutes < 0)
+                    minutes = 0;
+
+                m_timeMinutes = hours;
+                m_timeSeconds = minutes;
+            }
+            public bool isNightTime
+            {
+                get
+                {
+                    if (currentHour > 17 || currentHour < 7)
+                        return true;
+                    return false;
+                }
+            }
+            public int maxTime
+            {
+                get
+                {
+                    return 24 * 60;
+                }
+            }
+            public int currentTime
+            {
+                get
+                {
+                    return m_timeMinutes * 60 + m_timeSeconds;
+                }
+            }
+            public int currentHour
+            {
+                get
+                {
+                    return m_timeMinutes;
+                }
+            }
+            public string timeAsString
+            {
+                get
+                {
+                    string h = "" + m_timeMinutes;
+                    string m = "" + m_timeSeconds;
+
+                    if (m_timeMinutes < 10)
+                        h = "0" + m_timeMinutes;
+                    if (m_timeSeconds < 10)
+                        m = "0" + m_timeSeconds;
+
+                    return h + ":" + m;
+                }
             }
         }
     }

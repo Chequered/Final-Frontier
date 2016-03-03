@@ -11,23 +11,23 @@ namespace EndlessExpedition
     {
         public class TerrainTileNeighborInfo
         {
-            public string identity;
-            public int x, y;
+            public TerrainTile tile;
 
-
-            public void Copy(TerrainTileNeighborInfo other)
+            public string identity
             {
-                //Adding to empty string so it becomes a new string instead of a reference to the string
-                identity = "" + other.identity;
+                get
+                {
+                    return tile.identity;
+                }
             }
 
             public string left
             {
                 get
                 {
-                    if (x <= 0)
-                        return "none";
-                    return ManagerInstance.Get<TerrainManager>().tiles[x - 1, y].identity;
+                    if (tile.x > 0)
+                        return ManagerInstance.Get<TerrainManager>().tiles[tile.x - 1, tile.y].identity;
+                    return "none";
                 }
             }
 
@@ -35,9 +35,9 @@ namespace EndlessExpedition
             {
                 get
                 {
-                    if (y >= TerrainManager.worldSize - 1)
-                        return "none";
-                    return ManagerInstance.Get<TerrainManager>().tiles[x, y + 1].identity;
+                    if (tile.y < TerrainManager.worldSize - 1)
+                        return ManagerInstance.Get<TerrainManager>().tiles[tile.x, tile.y + 1].identity;
+                    return "none";
                 }
             }
 
@@ -45,9 +45,9 @@ namespace EndlessExpedition
             {
                 get
                 {
-                    if (x >= TerrainManager.worldSize - 1)
-                        return "none";
-                    return ManagerInstance.Get<TerrainManager>().tiles[x + 1, y].identity;
+                    if (tile.x < TerrainManager.worldSize - 1)
+                        return ManagerInstance.Get<TerrainManager>().tiles[tile.x + 1, tile.y].identity;
+                    return "none";
                 }
             }
 
@@ -55,9 +55,9 @@ namespace EndlessExpedition
             {
                 get
                 {
-                    if (y <= 0)
-                        return "none";
-                    return ManagerInstance.Get<TerrainManager>().tiles[x, y - 1].identity;
+                    if (tile.y > 0)
+                        return ManagerInstance.Get<TerrainManager>().tiles[tile.x, tile.y - 1].identity;
+                    return "none";
                 }
             }
         }

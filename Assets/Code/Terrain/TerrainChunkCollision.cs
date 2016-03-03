@@ -30,7 +30,8 @@ namespace EndlessExpedition
 
             public void OnMouseEnter()
             {
-                currentHoveringTile.OnMouseEnter();
+                if(currentHoveringTile != null)
+                    currentHoveringTile.OnMouseEnter();
             }
 
             public void OnMouseOver()

@@ -5,31 +5,32 @@ using System.Collections.Generic;
 
 using EndlessExpedition.Managers;
 using EndlessExpedition.Items;
-using EndlessExpedition.UI.Internal;
 using EndlessExpedition.Entities;
+
+using DG.Tweening;
+using DG.Tweening.Plugins;
+using EndlessExpedition.Serialization;
+using System;
 
 namespace EndlessExpedition
 {
     namespace UI
     {
-        namespace Internal
+        public interface IUI
         {
-            public interface IUI
-            {
-                void BuildUI();
-                void Toggle();
-                void Toggle(bool state);
-                string menuName { get; set; }
-                Vector2 position { get; set; }
-                Vector2 windowSize { get; set; }
-                RectTransform transform { get; }
-                Vector2 scale { get; set; }
-            }
+            void BuildUI();
+            void Toggle();
+            void Toggle(bool state);
+            string menuName { get; }
+            Vector2 position { get; set; }
+            Vector2 windowSize { get; set; }
+            RectTransform transform { get; }
+            Vector2 scale { get; set; }
+        }
 
-            public interface IInventoryDisplay : IUI
-            {
-                void UpdateUI();
-            }
+        public interface IInventoryDisplay : IUI
+        {
+            void UpdateUI();
         }
 
         //interfaces
@@ -39,6 +40,11 @@ namespace EndlessExpedition
             void RemoveButton(ActionButton button);
             ActionButton[] buttons { get; }
             Vector2 buttonSize { get; set; }
+        }
+        public interface IPropertyDisplay : IUI
+        {
+            void AddDisplay(string displayTitle, string propertyIdentity);
+            void RemoveDisplay(string displayTitle, string propertyIdentity);
         }
         public interface IEssentialsDisplay : IInventoryDisplay
         {
@@ -190,12 +196,14 @@ namespace EndlessExpedition
                 m_group.alpha = System.Convert.ToInt32(state);
                 m_group.interactable = state;
                 m_group.blocksRaycasts = state;
+                m_gameObject.SetActive(state);
             }
             public void Toggle(bool state)
             {
                 m_group.alpha = System.Convert.ToInt32(state);
                 m_group.interactable = state;
                 m_group.blocksRaycasts = state;
+                m_gameObject.SetActive(state);
             }
 
             public string menuName
@@ -308,6 +316,135 @@ namespace EndlessExpedition
                 }
             }
         }
+
+        public class ItemContainerDisplayElement : MonoBehaviour
+        {
+            private ItemContainerDisplay m_display;
+            private bool m_moving;
+            private int m_elementIndex;
+
+            private GameObject m_amount, m_icon;
+            private GameObject m_preview;
+
+            private Color m_defaultColor;
+
+            public void SetInfo(ItemContainerDisplay display, int index)
+            {
+                m_display = display;
+                m_elementIndex = index;
+
+                m_amount = gameObject.transform.FindChild("Amount").gameObject;
+                m_icon = gameObject.transform.FindChild("Image").gameObject;
+                m_defaultColor = transform.FindChild("Background").GetComponent<Image>().color;
+            }
+
+            public void OnMouseOver()
+            {
+                transform.FindChild("Background").GetComponent<Image>().color = new Color(115, 115, 115);
+                InputManager.isMouseOverItemSlot = true;
+
+                if(m_display.state)
+                {
+                    if (Input.GetMouseButtonDown(0) && ManagerInstance.Get<InputManager>().currentMovingItemstack == null && stack != null)
+                    {
+                        ManagerInstance.Get<InputManager>().currentMovingItemstack = new ItemStackTransferInfo(stack, m_display.itemContainer, m_elementIndex);
+                        m_moving = true;
+                    }
+                    if(Input.GetMouseButtonUp(0))
+                    {
+                        TransferStack();
+                    }
+                }
+            }
+
+            private void TransferStack()
+            {
+                ItemStackTransferInfo info = ManagerInstance.Get<InputManager>().currentMovingItemstack;
+                if (info != null)
+                {
+                    ItemStack stack = info.itemContainer.TakeStackAt(info.containerIndex);
+
+                    if (stack == null)
+                        Debug.Log("stack = null");
+
+                    if (!m_display.itemContainer.AddStackAt(stack, m_elementIndex))
+                    {
+                        FailTrainsfer();
+                        return;
+                    }
+                }
+                m_moving = false;
+                GameObject[] previews = GameObject.FindGameObjectsWithTag("ItemTransferPreview");
+                for (int i = 0; i < previews.Length; i++)
+                {
+                    Destroy(previews[i]);
+                }
+                ManagerInstance.Get<InputManager>().currentMovingItemstack = null;
+            }
+
+            private void OnMouseExit()
+            {
+                transform.FindChild("Background").GetComponent<Image>().color = m_defaultColor;
+                InputManager.isMouseOverItemSlot = false;
+            }
+
+            private void Update()
+            {
+                if (stack == null)
+                    return;
+
+                if(m_moving)
+                {
+                    if (m_preview != null)
+                    {
+                        m_preview.GetComponent<RectTransform>().anchoredPosition = Input.mousePosition;
+                        m_amount.GetComponent<Text>().text = "";
+                        m_icon.GetComponent<Image>().enabled = false;
+                    }
+                    else if (ManagerInstance.Get<InputManager>().currentMovingItemstack != null)
+                    {
+                        CreatePreviewObject();
+                    }
+
+                    if (Input.GetMouseButtonUp(0) && !InputManager.isMouseOverItemSlot)
+                    {
+                        FailTrainsfer();
+                    }
+                }
+            }
+
+            private void FailTrainsfer()
+            {
+                m_display.UpdateSlots(m_elementIndex);
+                //ManagerInstance.Get<InputManager>().currentMovingItemstack.itemContainer.OnStackUpdate(ManagerInstance.Get<InputManager>().currentMovingItemstack.containerIndex);
+                m_moving = false;
+                Destroy(m_preview);
+                ManagerInstance.Get<InputManager>().currentMovingItemstack = null;
+            }
+
+            private void CreatePreviewObject()
+            {
+                m_preview = GameObject.Instantiate(Resources.Load("UI/ItemElement") as GameObject, Vector3.zero, Quaternion.identity) as GameObject;
+                m_preview.transform.tag = "ItemTransferPreview";
+
+                m_preview.transform.FindChild("Amount").GetComponent<Text>().text = "" + stack.amount;
+                m_preview.transform.FindChild("Image").GetComponent<Image>().sprite = stack.item.GetGraphics().icon;
+                m_preview.transform.FindChild("Image").GetComponent<Image>().enabled = true;
+                m_preview.transform.FindChild("Background").GetComponent<Image>().raycastTarget = false;
+
+                m_preview.transform.SetParent(GameObject.FindGameObjectWithTag("UI").transform, false);
+                m_preview.transform.localScale = new Vector3(1, 1, 1);
+            }
+
+            private ItemStack stack
+            {
+                get
+                {
+                    return m_display.itemContainer.GetStackAt(m_elementIndex);
+                }
+            }
+        }
+
         public class ItemContainerDisplay : IItemContainerDisplay
         {
             //dataholder
@@ -323,6 +460,10 @@ namespace EndlessExpedition
             private RectTransform m_elementTransform;
             private CanvasGroup m_group;
             private GridLayoutGroup m_layout;
+
+            //Initial
+            private bool m_initialSet;
+            private Vector2 m_initialPosition;
 
             public ItemContainerDisplay(ItemContainer itemContainer)
             {
@@ -342,7 +483,7 @@ namespace EndlessExpedition
             }
 
             public void UpdateUI() { }
-            public void UpdateSlot(int index)
+            public void UpdateSlots(int index)
             {
                 ItemStack stack = itemContainer.GetStackAt(index);
                 if (stack != null)
@@ -350,11 +491,16 @@ namespace EndlessExpedition
                     m_displayElements[index].transform.FindChild("Amount").GetComponent<Text>().text = "" + stack.amount;
                     m_displayElements[index].transform.FindChild("Image").GetComponent<Image>().sprite = stack.item.GetGraphics().icon;
                     m_displayElements[index].transform.FindChild("Image").GetComponent<Image>().enabled = true;
+                    m_displayElements[index].transform.FindChild("Image").transform.DOScale(new Vector3(1, 1, 1), 1f);
+
+
+                    m_displayElements[index].transform.FindChild("Amount").GetComponent<Text>().DOColor(Color.white, 0.15f).OnComplete(
+                        () => m_displayElements[index].transform.FindChild("Amount").GetComponent<Text>().DOColor(new Color(0.88f, 0.88f, 0.88f), 0.45f));
                 }
                 else
                 {
                     m_displayElements[index].transform.FindChild("Amount").GetComponent<Text>().text = "";
-                    m_displayElements[index].transform.FindChild("Image").GetComponent<Image>().enabled = false;
+                    m_displayElements[index].transform.FindChild("Image").transform.DOScale(new Vector3(0, 0, 1), 1f);
                 }
             }
 
@@ -378,15 +524,21 @@ namespace EndlessExpedition
                     ItemStack stack = itemContainer.GetAllStacks()[i];
                     GameObject element = GameObject.Instantiate(m_elementPrefab, Vector3.zero, Quaternion.identity) as GameObject;
                     element.transform.SetParent(m_gameObject.transform, false);
+                    element.transform.localScale = new Vector3(1, 1, 1);
+                    element.AddComponent<ItemContainerDisplayElement>().SetInfo(this, i);
+
                     if(stack != null)
                     {
                         element.transform.FindChild("Amount").GetComponent<Text>().text = "" + stack.amount;
                         element.transform.FindChild("Image").GetComponent<Image>().sprite = stack.item.GetGraphics().icon;
+                        element.transform.FindChild("Image").GetComponent<Image>().transform.localScale = new Vector3(0, 0, 1);
+                        element.transform.FindChild("Image").GetComponent<Image>().transform.DOScale(new Vector3(1, 1, 1), 1f);
                     }
                     else
                     {
                         element.transform.FindChild("Amount").GetComponent<Text>().text = "";
                         element.transform.FindChild("Image").GetComponent<Image>().enabled = false;
+                        element.transform.FindChild("Image").GetComponent<Image>().transform.localScale = new Vector3(0, 0, 1);
                     }
 
                     m_displayElements.Add(element);
@@ -399,12 +551,28 @@ namespace EndlessExpedition
                 m_group.alpha = System.Convert.ToInt32(state);
                 m_group.interactable = state;
                 m_group.blocksRaycasts = state;
+                for (int i = 0; i < transform.childCount; i++)
+                {
+                    if (state)
+                        transform.GetChild(i).GetComponent<BoxCollider2D>().size = m_elementTransform.rect.size;
+                    else
+                        transform.GetChild(i).GetComponent<BoxCollider2D>().size = Vector2.zero;
+                }
+                m_gameObject.SetActive(state);
             }
             public void Toggle(bool state)
             {
                 m_group.alpha = System.Convert.ToInt32(state);
                 m_group.interactable = state;
                 m_group.blocksRaycasts = state;
+                for (int i = 0; i < transform.childCount; i++)
+                {
+                    if (state)
+                        transform.GetChild(i).GetComponent<BoxCollider2D>().size = m_elementTransform.rect.size;
+                    else
+                        transform.GetChild(i).GetComponent<BoxCollider2D>().size = Vector2.zero;
+                }
+                m_gameObject.SetActive(state);
             }
 
             public ItemContainer itemContainer
@@ -416,9 +584,9 @@ namespace EndlessExpedition
                 set
                 {
                     if(m_container != null)
-                        m_container.OnStackUpdate -= UpdateSlot;
+                        m_container.OnStackUpdate -= UpdateSlots;
                     m_container = value;
-                    m_container.OnStackUpdate += UpdateSlot;
+                    m_container.OnStackUpdate += UpdateSlots;
                 }
             }
             public string menuName
@@ -441,6 +609,18 @@ namespace EndlessExpedition
                 set
                 {
                     m_transform.anchoredPosition = value;
+                    if(!m_initialSet)
+                    {
+                        m_initialPosition = value;
+                        m_initialSet = true;
+                    }
+                }
+            }
+            public Vector2 initialPosition
+            {
+                get
+                {
+                    return m_initialPosition;
                 }
             }
             public Vector2 windowSize
@@ -474,6 +654,19 @@ namespace EndlessExpedition
                 {
                     m_transform.localScale = new Vector3(value.x, value.y, 1);
                 }
+            }
+            public bool state
+            {
+                get
+                {
+                    return System.Convert.ToBoolean(m_group.alpha);
+                }
+            }
+            public GameObject GetUIElementAt(int index)
+            {
+                if (index < m_displayElements.Count)
+                    return m_displayElements[index];
+                return null;
             }
         }
         public class ActionMenuList : IActionMenu
@@ -538,12 +731,14 @@ namespace EndlessExpedition
                 m_group.alpha = System.Convert.ToInt32(state);
                 m_group.interactable = state;
                 m_group.blocksRaycasts = state;
+                m_gameObject.SetActive(state);
             }
             public void Toggle(bool state)
             {
                 m_group.alpha = System.Convert.ToInt32(state);
                 m_group.interactable = state;
                 m_group.blocksRaycasts = state;
+                m_gameObject.SetActive(state);
             }
 
             public void AddButton(ActionButton button)
@@ -628,6 +823,198 @@ namespace EndlessExpedition
             }
         }
 
+        public class EntityPropertyDisplay : IPropertyDisplay
+        {
+            private RectTransform m_transform;
+            private CanvasGroup m_group;
+            private Properties m_properties;
+            private List<string> m_propertyTitles;
+            private List<int> m_propertiesToDisplay;
+            private List<GameObject> m_displays;
+            private string m_menuName;
+            private bool m_built;
+
+            private Vector2 m_displaySize;
+
+            private GameObject m_displayPrefab;
+            private GameObject m_gameObject;
+
+            public EntityPropertyDisplay()
+            {
+                m_gameObject = GameObject.Instantiate(Resources.Load("UI/ActionMenuList") as GameObject, Vector2.zero, Quaternion.identity) as GameObject;
+                m_gameObject.name = "ActionMenuList";
+
+                m_transform = m_gameObject.GetComponent<RectTransform>();
+                m_group = m_gameObject.GetComponent<CanvasGroup>();
+                m_transform.SetParent(GameObject.FindGameObjectWithTag("UI").GetComponent<RectTransform>(), false);
+
+                m_propertyTitles = new List<string>();
+                m_propertiesToDisplay = new List<int>();
+                m_displays = new List<GameObject>();
+
+                m_displayPrefab = Resources.Load("UI/PropertyDisplay") as GameObject;
+            }
+
+            public Properties properties
+            {
+                get
+                {
+                    return m_properties;
+                }
+                set
+                {
+                    m_properties = value;
+                    m_properties.OnValueChangeEvent -= RefreshUI;
+                    m_properties.OnValueChangeEvent += RefreshUI;
+                }
+            }
+
+            public virtual string menuName
+            {
+                get { return m_menuName; }
+                set
+                {
+                    m_menuName = value;
+                    m_gameObject.name = m_menuName;
+                }
+            }
+            public Vector2 displaySize
+            {
+                set
+                {
+                    m_displaySize = value;
+                }
+                get
+                {
+                    return m_displaySize;
+                }
+            }
+            public Vector2 position
+            {
+                get
+                {
+                    return m_transform.anchoredPosition;
+                }
+                set
+                {
+                    m_transform.anchoredPosition = value;
+                }
+            }
+            public Vector2 windowSize
+            {
+                get
+                {
+                    return m_transform.sizeDelta;
+                }
+                set
+                {
+                    m_transform.sizeDelta = value;
+                }
+            }
+            public RectTransform transform
+            {
+                get
+                {
+                    return m_gameObject.GetComponent<RectTransform>();
+                }
+            }
+            public Vector2 scale
+            {
+                get
+                {
+                    return m_transform.localScale;
+                }
+                set
+                {
+                    m_transform.localScale = value;
+                }
+            }
+
+            public void AddDisplay(string displayTitle, string propertyIdentity)
+            {
+                m_propertyTitles.Add(displayTitle);
+
+                int index = m_properties.Index(propertyIdentity);
+                if(index >= 0)
+                {
+                    m_propertiesToDisplay.Add(index);
+                }
+            }
+
+            public void BuildUI()
+            {
+                if (m_displaySize == null)
+                    m_displaySize = Vector2.zero;
+
+                RectOffset padding = m_gameObject.GetComponent<VerticalLayoutGroup>().padding;
+
+                m_transform.sizeDelta = new Vector2(padding.left + padding.right + m_displaySize.x, (padding.top + padding.bottom) + m_propertiesToDisplay.Count * m_displaySize.y);
+
+                for (int i = 0; i < m_propertiesToDisplay.Count; i++)
+                {
+                    GameObject display = GameObject.Instantiate(m_displayPrefab, Vector3.zero, Quaternion.identity) as GameObject;
+                    display.transform.SetParent(m_gameObject.transform, false);
+                    display.transform.FindChild("Title").GetComponent<Text>().text = m_propertyTitles[i];
+                    display.transform.FindChild("Value").GetComponent<Text>().text = m_properties.GetAll()[m_propertiesToDisplay[i]].Value.ToString();
+
+                    m_displays.Add(display);
+                }
+
+                m_built = true;
+            }
+
+            //TODO: Use propertyIndex
+            public void RefreshUI(int propertyIndex)
+            {
+                if (!m_built)
+                    return;
+
+                //Destroy old displays
+                for (int i = 0; i < m_displays.Count; i++)
+                {
+                    m_displays[i].AddComponent<GameObjectDestroyer>().Destroy();
+                }
+
+                m_displays.Clear();
+
+                RectOffset padding = m_gameObject.GetComponent<VerticalLayoutGroup>().padding;
+
+                m_transform.sizeDelta = new Vector2(m_transform.sizeDelta.x, (padding.top + padding.bottom) + m_propertiesToDisplay.Count * m_displaySize.y);
+
+                //Build new
+                for (int i = 0; i < m_propertiesToDisplay.Count; i++)
+                {
+                    GameObject display = GameObject.Instantiate(m_displayPrefab, Vector3.zero, Quaternion.identity) as GameObject;
+                    display.transform.SetParent(m_gameObject.transform, false);
+                    display.transform.FindChild("Title").GetComponent<Text>().text = m_propertyTitles[i];
+                    display.transform.FindChild("Value").GetComponent<Text>().text = m_properties.GetAll()[m_propertiesToDisplay[i]].ToString();
+
+                    m_displays.Add(display);
+                }
+            }
+
+            public void RemoveDisplay(string displayTitle, string propertyIdentity)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Toggle()
+            {
+                bool state = !m_group.interactable;
+                m_group.alpha = Convert.ToInt32(state);
+                m_group.interactable = state;
+                m_group.blocksRaycasts = state;
+                m_gameObject.SetActive(state);
+            }
+            public void Toggle(bool state)
+            {
+                m_group.alpha = Convert.ToInt32(state);
+                m_group.interactable = state;
+                m_group.blocksRaycasts = state;
+                m_gameObject.SetActive(state);
+            }
+        }
+
         //groups
         public class EntityUIGroup
         {
@@ -668,14 +1055,7 @@ namespace EndlessExpedition
                     if (!m_openOnSelect[i])
                         continue;
 
-                    CanvasGroup CG = m_uiElements[i].transform.GetComponent<CanvasGroup>();
-                    if(CG != null)
-                    {
-                        bool state = CG.interactable;
-                        CG.alpha = System.Convert.ToInt32(state);
-                        CG.interactable = state;
-                        CG.blocksRaycasts = state;
-                    }
+                    m_uiElements[i].Toggle();
                 }
             }
             public void Toggle(bool state)
@@ -685,23 +1065,19 @@ namespace EndlessExpedition
                     if (!m_openOnSelect[i])
                         continue;
 
-                    CanvasGroup CG = m_uiElements[i].transform.GetComponent<CanvasGroup>();
-                    if (CG != null)
-                    {
-                        CG.alpha = System.Convert.ToInt32(state);
-                        CG.interactable = state;
-                        CG.blocksRaycasts = state;
-                    }
+                    m_uiElements[i].Toggle(state);
                 }
             }
 
             public void ChangeOpenOnSelect(IUI element, bool state)
             {
                 for (int i = 0; i < m_uiElements.Count; i++)
-                {
+			    {
                     if (m_uiElements[i] == element)
+                    {
                         m_openOnSelect[i] = state;
-                    break;
+                        break;
+                    }
                 }
             }
             public void ChangeOpenOnSelect<T>(bool state) where T : IUI

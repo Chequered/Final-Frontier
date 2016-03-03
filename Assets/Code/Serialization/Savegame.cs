@@ -82,27 +82,27 @@ namespace EndlessExpedition
                     BinaryFormatter bf = new BinaryFormatter();
                     {
                         //world
-                        FileStream file = File.Open(Properties.saveRootPath + folder + "/" + SAVEGAME_WORLD, FileMode.Open);
-
-                        m_worldProperties = bf.Deserialize(file) as Properties;
-                        file.Close();
+                        using (FileStream file = new FileStream(Properties.saveRootPath + folder + "/" + SAVEGAME_WORLD, FileMode.Open))
+                        {
+                            m_worldProperties = bf.Deserialize(file) as Properties;
+                            file.Close();
+                        }
                     }
                     {
                         //terrain
-                        FileStream file = File.Open(Properties.saveRootPath + folder + "/" + SAVEGAME_TERRAIN, FileMode.Open);
-
-                        m_terrainProperties = bf.Deserialize(file) as List<Properties>;
-                        file.Close();
+                        using (FileStream file = new FileStream(Properties.saveRootPath + folder + "/" + SAVEGAME_TERRAIN, FileMode.Open))
+                        {
+                            m_terrainProperties = bf.Deserialize(file) as List<Properties>;
+                            file.Close();
+                        }
                     }
                     {
                         //entities
-                        FileStream file = File.Open(Properties.saveRootPath + folder + "/" + SAVEGAME_ENTITIES, FileMode.Open);
-
-                        m_entityProperties = bf.Deserialize(file) as List<Properties>;
-
-                        //Debug.LogWarning(m_entityProperties.Count);
-
-                        file.Close();
+                        using (FileStream file = new FileStream(Properties.saveRootPath + folder + "/" + SAVEGAME_ENTITIES, FileMode.Open))
+                        {
+                            m_entityProperties = bf.Deserialize(file) as List<Properties>;
+                            file.Close();
+                        }
                     }
 
                 }

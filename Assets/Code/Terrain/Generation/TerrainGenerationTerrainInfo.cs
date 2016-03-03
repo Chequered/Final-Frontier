@@ -30,9 +30,9 @@ namespace EndlessExpedition
             {
                 //TODO: use several octaves
                 m_perlinMap = GeneratePerlinMap(
-                    new float[]{5.5f, 5.5f, 6.5f, 5, 1}, //scale
-                    new float[]{0f, 250f, 125f, 500f, 0}, //seed addition
-                    new float[]{1f, 0.8f, 0.75f, 0.35f, 0.15f}); //strength of octave
+                    new float[]{5.5f, 5.5f, 6.5f, 5, 1, 25, 55}, //scale
+                    new float[]{0f, 250f, 125f, 500f, 0, 125, 550}, //seed addition
+                    new float[]{1f, 0.8f, 0.75f, 0.35f, 0.15f, 0.35f, 0.25f}); //strength of octave
                 GenerateTerrain(terrainTiles, m_perlinMap, "primary");
                 GenerateTerrain(terrainTiles, m_perlinMap, "secondary");
                 GenerateTerrain(terrainTiles, m_perlinMap, "resource");
@@ -132,7 +132,6 @@ namespace EndlessExpedition
                     totalStrength += strengths[i];
                 }
 
-
                 for (int i = 0; i < scales.Length; i++)
                 {
                     float seed = m_worldInfo.properties.Get<float>("seed") + additions[i];
@@ -146,7 +145,8 @@ namespace EndlessExpedition
                             float xCoord = seed + x / size * scales[i];
                             float yCoord = seed + y / size * scales[i];
                             float sample = Mathf.PerlinNoise(xCoord, yCoord);
-                            noise[(int)x, (int)y] += sample * strengths[i];
+                            float final = sample * strengths[i];
+                            noise[(int)x, (int)y] += final;
                             x++;
                         }
                         y++;
@@ -170,6 +170,70 @@ namespace EndlessExpedition
             {
                 return m_planetTerrainShape[x, y];
             }
+        }
+    }
+    public static class TerrainExtensions
+    {
+        public static float[,] GeneratePerlinMap(int width, int height, float seed, float[] scales, float[] additions, float[] strengths)
+        {
+            float[,] dataMap = new float[width, height];
+            float totalStrength = 0f;
+            for (int i = 0; i < strengths.Length; i++)
+            {
+                totalStrength += strengths[i];
+            }
+
+            for (int i = 0; i < scales.Length; i++)
+            {
+                seed += additions[i];
+
+                float y = 0.0F;
+                while (y < height)
+                {
+                    float x = 0.0F;
+                    while (x < width)
+                    {
+                        float xCoord = seed + x / width * scales[i];
+                        float yCoord = seed + y / height * scales[i];
+                        float sample = Mathf.PerlinNoise(xCoord, yCoord);
+                        float final = sample * strengths[i];
+                        dataMap[(int)x, (int)y] += final;
+                        x++;
+                    }
+                    y++;
+                }
+            }
+
+
+            //bring it back to 0 - 1
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    dataMap[x, y] /= totalStrength;
+                }
+            }
+            return dataMap;
+        }
+        public static bool[,] DataCircle(int radius, int centerX, int centerY)
+        {
+            bool[,] result = new bool[radius * 2, radius * 2];
+
+            int r = radius;
+            int ox = centerX, oy = centerY;
+            int size = radius * 2;
+
+            for (int x = -r; x < r; x++)
+            {
+                int height = (int)Mathf.Sqrt(r * r - x * x);
+
+                for (int y = -height; y < height; y++)
+                {
+                    if (x + ox >= 0 && x + ox < size && y + oy >= 0 && y + oy < size)
+                        result[x + ox, y + oy] = true;
+                }
+            }
+            return result;
         }
     }
 }

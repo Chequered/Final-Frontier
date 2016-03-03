@@ -14,6 +14,11 @@ namespace EndlessExpedition
         [System.Serializable]
         public class Properties
         {
+            public delegate void OnValueChangeEventHandler(int propertyIndex);
+            public delegate void OnListChangeEventHandler();
+            public OnValueChangeEventHandler OnValueChangeEvent;
+            public OnListChangeEventHandler OnListChangeEvent;
+
             public static string dataRootPath = Application.dataPath + "/.." + "/Data/";
             public static string saveRootPath = Application.dataPath + "/.." + "/Saves/";
 
@@ -50,12 +55,18 @@ namespace EndlessExpedition
             {
                 m_properties.Clear();
                 m_properties.AddRange(properties.GetAll());
+
+                if (OnListChangeEvent != null)
+                    OnListChangeEvent();
             }
 
             public void SetAll(List<Property<string, object>> properties)
             {
                 m_properties.Clear();
                 m_properties.AddRange(properties);
+
+                if (OnListChangeEvent != null)
+                    OnListChangeEvent();
             }
 
             /// <summary>
@@ -65,6 +76,9 @@ namespace EndlessExpedition
             public void AddAll(List<Property<string, object>> properties)
             {
                 m_properties.AddRange(properties);
+
+                if (OnListChangeEvent != null)
+                    OnListChangeEvent();
             }
 
             /// <summary>
@@ -79,6 +93,11 @@ namespace EndlessExpedition
                 {
                     if (m_properties[i].Key == key)
                     {
+                        if (typeof(T) != m_properties[i].Value.GetType())
+                        {
+                            Debug.Log(typeof(T) + " - " + m_properties[i].Value.GetType());
+                            Debug.Log(m_properties[i].Key + ": " + m_properties[i].Value);
+                        }
                         return (T)m_properties[i].Value;
                     }
                 }
@@ -98,10 +117,17 @@ namespace EndlessExpedition
                     if (m_properties[i].Key == key)
                     {
                         m_properties[i] = new Property<string, object>(key, value);
+
+                        if (OnValueChangeEvent != null)
+                            OnValueChangeEvent(i);
+                        
                         return;
                     }
                 }
                 m_properties.Add(new Property<string, object>(key, value));
+
+                if (OnValueChangeEvent != null)
+                    OnValueChangeEvent(m_properties.Count - 1);
             }
 
             /// <summary>
@@ -124,6 +150,23 @@ namespace EndlessExpedition
             }
 
             /// <summary>
+            /// Find the index of the property and returns it
+            /// </summary>
+            /// <param name="key">Key/Identity of the property</param>
+            /// <returns>The index of the property in the internal list</returns>
+            public int Index(string key)
+            {
+                for (int i = 0; i < m_properties.Count; i++)
+                {
+                    if (m_properties[i].Key == key)
+                    {
+                        return i;
+                    }
+                }
+                return -1;
+            }
+
+            /// <summary>
             /// Only sets the property if it doesnt exist yet
             /// </summary>
             /// <param name="key">The property name/key</param>
@@ -138,6 +181,9 @@ namespace EndlessExpedition
                     }
                 }
                 m_properties.Add(new Property<string, object>(key, value));
+
+                if (OnValueChangeEvent != null)
+                    OnValueChangeEvent(m_properties.Count - 1);
             }
 
             /// <summary>
@@ -152,7 +198,7 @@ namespace EndlessExpedition
             }
 
             /// <summary>
-            /// Prints out all the properties in the Unity debugger
+            /// Prints out all the properties in to the console
             /// </summary>
             public void LogAll()
             {
@@ -161,7 +207,7 @@ namespace EndlessExpedition
                 {
                     txt += m_properties[i].Key + ": " + m_properties[i].Value + " (" + m_properties[i].Value.GetType() + ")" + "\n";
                 }
-                Debug.Log(txt);
+                CMD.Log(txt);
             }
 
             //Serialization

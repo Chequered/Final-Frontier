@@ -13,6 +13,7 @@ namespace EndlessExpedition
             public Entity entity;
 
             private bool m_mouseOver = false;
+            private bool m_mouseDownWasOnUI = false;
 
             public void OnMouseEnter()
             {
@@ -37,23 +38,12 @@ namespace EndlessExpedition
                 entity.OnMouseExit();
             }
 
-            private void Update()
+            public void OnClick()
             {
-                if(EndlessExpedition.Managers.GameManager.gameState == GameState.Playing)
-                {
-                    if(Input.GetMouseButtonUp(0))
-                    {
-                        if (!UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
-                        {
-                            if (m_mouseOver)
-                                entity.OnSelect();
-                            else if(entity.isSelected)
-                            {
-                                entity.OnDeselect();
-                            }
-                        }
-                    }
-                }
+                m_mouseDownWasOnUI = true;
+
+                if (m_mouseOver)
+                    entity.OnSelect();
             }
         }
     }

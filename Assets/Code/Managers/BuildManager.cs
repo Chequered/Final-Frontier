@@ -14,47 +14,70 @@ namespace EndlessExpedition
     {
         public class BuildManager : ManagerBase
         {
-            public Building BuildBuildingAt(int x, int y, string buildingIdentity, bool instantBuild = false)
+            private TerrainDataMap<Building> m_buildings;
+
+            public Building BuildBuilding(int x, int y, string buildingIdentity, bool instantBuild = false)
             {
-                Building building = ManagerInstance.Get<EntityManager>().Find<Building>(buildingIdentity);
-                //Debug.Log(building + " - " + buildingIdentity);
-                int width = building.properties.Get<int>("tileWidth");
-                int height = building.properties.Get<int>("tileHeight");
-                Entity builtBuilding = null;
+                Building building = ManagerInstance.Get<EntityManager>().FindFromCache<Building>(buildingIdentity);
+
+                return BuildBuilding(x, y, building, instantBuild);
+            }
+            public Building BuildBuilding(int x, int y, Building buildingPrefab, bool instantBuild = false)
+            {
+                int width = buildingPrefab.properties.Get<int>("tileWidth");
+                int height = buildingPrefab.properties.Get<int>("tileHeight");
+                Building builtBuilding = null;
 
                 if (CheckBuildLocation(x, y, width, height))
                 {
-                    builtBuilding = ManagerInstance.Get<EntityManager>().CreateEntity<Building>(building, x, y);
-                    if (!instantBuild)
+                    builtBuilding = ManagerInstance.Get<EntityManager>().CreateEntity<Building>(buildingPrefab, x, y) as Building;
+
+                    if (instantBuild)
+                        builtBuilding.OnBuild();
+                    else
+                    {
                         if (builtBuilding.properties.Get<string>("buildMode") == "dropDown")
                             new BuildingLanding().AttachToEntity(builtBuilding);
+                        else if (builtBuilding.properties.Get<string>("buildMode") != "construction")
+                            builtBuilding.OnBuild();
+                    }
+
+                    for (int _x = 0; _x < width; _x++)
+                    {
+                        for (int _y = 0; _y < height; _y++)
+                        {
+                            m_buildings.SetDataAt(x + _x, y + _y, builtBuilding, false);
+                        }
+                    }
                 }
                 else
                 {
-                    Debug.LogError("Invalid Build Location! (" + x + ", " + y + ") " + width + " x " + height);
+                    CMD.Warning("Invalid Build Location! (" + x + ", " + y + ") " + width + " x " + height);
                 }
 
                 return builtBuilding as Building;
             }
-            public Building BuildBuildingAt(int x, int y, Building buildingPrefab, bool instantBuild = false)
+            public bool RegisterBuilding(int x, int y, Building building, bool instantBuild = false)
             {
-                int width = buildingPrefab.properties.Get<int>("tileWidth");
-                int height = buildingPrefab.properties.Get<int>("tileHeight");
-                Entity builtBuilding = null;
+                bool result = false;
+                int width = building.properties.Get<int>("tileWidth");
+                int height = building.properties.Get<int>("tileHeight");
 
                 if (CheckBuildLocation(x, y, width, height))
                 {
-                    builtBuilding = ManagerInstance.Get<EntityManager>().CreateEntity<Building>(buildingPrefab, x, y);
-                    if (!instantBuild)
-                        if (builtBuilding.properties.Get<string>("buildMode") == "dropDown")
-                            new BuildingLanding().AttachToEntity(builtBuilding);
+                    for (int _x = 0; _x < width; _x++)
+                    {
+                        for (int _y = 0; _y < height; _y++)
+                        {
+                            m_buildings.SetDataAt(x + _x, y + _y, building, false);
+                        }
+                    }
                 }
                 else
                 {
-                    Debug.LogError("Invalid Build Location! (" + x + ", " + y + ") " + width + " x " + height);
+                    CMD.Warning("Invalid Build Location! (" + x + ", " + y + ") " + width + " x " + height);
                 }
-
-                return builtBuilding as Building;
+                return result;
             }
 
             public bool CheckBuildLocation(int startX, int startY, int width, int height)
@@ -76,6 +99,11 @@ namespace EndlessExpedition
                 return true;
             }
             
+            public Building GetBuildingAt(int x, int y)
+            {
+                return m_buildings.GetDataAt(x, y);
+            }
+
             public override void OnStart()
             {
             }
@@ -92,7 +120,8 @@ namespace EndlessExpedition
             
             public override void OnLoad()
             {
-
+                m_buildings = new TerrainDataMap<Building>();
+                m_buildings.SetAllData(null, false);
             }
 
             public override void OnExit()

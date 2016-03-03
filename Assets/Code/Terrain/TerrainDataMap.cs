@@ -56,7 +56,7 @@ namespace EndlessExpedition
                 ApplyAllOverlays();
             }
 
-            public void SetAllData(T[,] data, bool updateOverlayTextures = true)
+            public void SetAllDataSpecific(T[,] data, bool updateOverlayTextures = true)
             {
                 for (int x = 0; x < TerrainManager.worldSize; x++)
                 {

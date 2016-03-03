@@ -12,6 +12,7 @@ namespace EndlessExpedition
         {
             public Properties properties;
             public TerrainTileGraphics graphics;
+            public int loadID;
 
             public TerrainTileCache()
             {

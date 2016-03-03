@@ -1,5 +1,7 @@
 ﻿using UnityEngine;
 
+using System.Collections.Generic;
+
 using EndlessExpedition.Serialization;
 using EndlessExpedition.Graphics;
 
@@ -19,19 +21,32 @@ namespace EndlessExpedition
             public int amount;
         }
 
+        public class ItemStackTransferInfo
+        {
+            public ItemStack itemStack;
+            public ItemContainer itemContainer;
+            public int containerIndex;
+            public ItemStackTransferInfo(ItemStack s, ItemContainer ic, int i)
+            {
+                itemStack = s;
+                itemContainer = ic;
+                containerIndex = i;
+            }
+        }
+
         public class ItemStack
         {
             public const int MAX_STACK_VALUE = 640;
 
             private int m_amount;
             private Item m_itemRef;
+            private ItemContainer m_containerRef;
 
-            public delegate void ItemAmountChangeEventHandler(int newAmount);
             public delegate void DepleteStackEventHandler();
             public delegate void NotEnoughRoomEventHandler(int abundance);
 
-            public ItemAmountChangeEventHandler OnTakeItems;
-            public ItemAmountChangeEventHandler OnAddItems;
+            public ItemContainer.StackUpdateEventHandler OnTakeItems;
+            public ItemContainer.StackUpdateEventHandler OnAddItems;
             public DepleteStackEventHandler OnStackDepletion;
 
             public ItemStack(Item item, int amount)
@@ -49,9 +64,10 @@ namespace EndlessExpedition
                     takeAway = new ItemStack(m_itemRef, amount);
                     m_amount -= amount;
                     if (m_amount <= 0)
-                        OnStackDepletion();
-                    else
-                        OnTakeItems(m_amount);
+                        if (OnStackDepletion != null)
+                            OnStackDepletion();
+                    else if(OnTakeItems != null && containerIndex != System.Int32.MaxValue)
+                        OnTakeItems(containerIndex);
                 }
                 else
                 {
@@ -66,7 +82,8 @@ namespace EndlessExpedition
                 if (m_amount + itemStack.amount < MAX_STACK_VALUE)
                 {
                     m_amount += itemStack.TakeAmount(itemStack.amount).amount;
-                    OnAddItems(m_amount);
+                    if (OnAddItems != null)
+                        OnTakeItems(containerIndex);
                 }
                 else
                 {
@@ -81,7 +98,8 @@ namespace EndlessExpedition
                 {
                     //fits
                     m_amount += itemStack.TakeAmount(amount).amount;
-                    OnAddItems(m_amount);
+                    if (OnAddItems != null)
+                        OnTakeItems(containerIndex);
                 }
                 else
                 {
@@ -140,6 +158,27 @@ namespace EndlessExpedition
                     if (amount >= MAX_STACK_VALUE)
                         return true;
                     return false;
+                }
+            }
+            public ItemContainer container
+            {
+                get
+                {
+                    return m_containerRef;
+                }
+                set
+                {
+                    m_containerRef = value;
+                }
+            }
+            public int containerIndex
+            {
+                get
+                {
+                    KeyValuePair<bool, int> result = container.GetStackInfo(this);
+                    if (result.Key)
+                        return result.Value;
+                    return System.Int32.MaxValue;
                 }
             }
         }

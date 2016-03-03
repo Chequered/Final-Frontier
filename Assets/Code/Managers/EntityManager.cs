@@ -49,16 +49,16 @@ namespace EndlessExpedition
                         switch (loadedEntities[i].Get<string>("type"))
                         {
                             case "actor":
-                                entity = CreateEntity<Actor>(Find<Actor>(loadedEntities[i].Get<string>("identity")), x, y);
-                                entity.properties.SetAll(loadedEntities[i]);
+                                entity = CreateEntity<Actor>(loadedEntities[i], x, y);
                                 break;
                             case "prop":
-                                entity = CreateEntity<Prop>(Find<Prop>(loadedEntities[i].Get<string>("identity")), x, y);
+                                entity = CreateEntity<Prop>(loadedEntities[i], x, y);
                                 entity.properties.SetAll(loadedEntities[i]);
                                 break;
                             case "building":
-                                entity = ManagerInstance.Get<BuildManager>().BuildBuildingAt(x, y, loadedEntities[i].Get<string>("identity"), true);
+                                entity = CreateEntity<Building>(loadedEntities[i], x, y);
                                 entity.properties.SetAll(loadedEntities[i]);
+                                ManagerInstance.Get<BuildManager>().RegisterBuilding(x, y, entity as Building);
                                 break;
                         }
                     }
@@ -145,7 +145,10 @@ namespace EndlessExpedition
 			        }
                 }
                 if (!allowed)
+                {
+                    CMD.Warning("Cannot place prop, " + x + ", " + y + "already filled");
                     return null;
+                }
 
                 for (int sX = 0; sX < tileWidth; sX++)
                 {
@@ -172,6 +175,8 @@ namespace EndlessExpedition
                 GameObject gameObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
                 gameObject.name = newEntity.properties.Get<string>("displayName") + " [" + x + ", " + y + "]";
                 gameObject.transform.parent = parent.transform;
+                gameObject.layer = LayerForEntityType(newEntity.properties.Get<string>("type"));
+
                 switch (entityPrefab.properties.Get<string>("type"))
                 {
                     case "actor":
@@ -187,7 +192,103 @@ namespace EndlessExpedition
                 //Setup graphics
                 newEntity.gameObject = gameObject;
                 gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/Entity") as Material;
-                gameObject.GetComponent<Renderer>().material.SetTexture("_MainTex", newEntity.GetGraphics().texture());
+                gameObject.GetComponent<Renderer>().material.SetTexture("_MainTex", newEntity.GetGraphics().texture(UnityEngine.Random.Range(0, newEntity.GetGraphics().variants)));
+                gameObject.GetComponent<Renderer>().sortingOrder = 1;
+
+                //Some final touches
+                newEntity.GoToGamePos(x, y, newEntity.gameObject.transform.position.z, true);
+                newEntity.GenerateCollision();
+                //newEntity.positionStatus = EntityPositionStatus.OnGround;
+
+                //Register the new entity
+                m_entities.Add(newEntity);
+                m_entityCount++;
+
+                //Start
+                newEntity.OnStart();
+
+                //add behaviour scripts
+                if (behaviourScripts != null)
+                {
+                    for (int i = 0; i < behaviourScripts.Length; i++)
+                    {
+                        behaviourScripts[i].AttachToEntity(newEntity);
+                    }
+                }
+                return newEntity;
+            }
+            public Entity CreateEntity<T>(Properties properties, float x, float y, EntityBehaviourScript[] behaviourScripts = null) where T : Entity
+            {
+                if (GameManager.gameState != GameState.StartingNew && GameManager.gameState != GameState.Playing && GameManager.gameState != GameState.StartingSave)
+                    Debug.LogError("Creating entity in wrong gamestate");
+
+                bool allowed = true;
+                int tileWidth = properties.Get<int>("tileWidth");
+                int tileHeight = properties.Get<int>("tileHeight");
+
+                if (properties.Get<string>("movementMode") == EntityMovementMode.Static)
+                {
+                    for (int sX = 0; sX < tileWidth; sX++)
+                    {
+                        for (int sY = 0; sY < tileHeight; sY++)
+                        {
+                            if (m_entityPlacementMap.GetDataAt(((int)x) + sX, ((int)y) + sY))
+                            {
+                                allowed = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (!allowed)
+                {
+                    CMD.Warning("Cannot place prop, " + x + ", " + y + "already filled");
+                    return null;
+                }
+
+                for (int sX = 0; sX < tileWidth; sX++)
+                {
+                    for (int sY = 0; sY < tileHeight; sY++)
+                    {
+                        m_entityPlacementMap.SetDataAt(((int)x) + sX, ((int)y) + sY, true);
+                    }
+                }
+                m_entityPlacementMap.ApplyAllOverlays();
+
+                //Create the new entity
+                T newEntity = Activator.CreateInstance(typeof(T)) as T;
+                newEntity.properties.SetAll(properties);
+                newEntity.SetGraphics(FindGraphics(properties.Get<string>("identity")));
+
+                GameObject parent = GameObject.Find("Entities");
+                if (parent == null)
+                {
+                    parent = new GameObject("Entities");
+                    parent.transform.parent = GameObject.Find("World").transform;
+                }
+
+                //Setup the graphics & GameObject for the new entity
+                GameObject gameObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                gameObject.name = newEntity.properties.Get<string>("displayName") + " [" + x + ", " + y + "]";
+                gameObject.transform.parent = parent.transform;
+                gameObject.layer = LayerForEntityType(properties.Get<string>("type"));
+
+                switch (properties.Get<string>("type"))
+                {
+                    case "actor":
+                        gameObject.transform.localScale = new Vector3(properties.Get<int>("pixWidth") / TerrainTileGraphics.TILE_TEXTURE_RESOLUTION,
+                            properties.Get<int>("pixHeight") / TerrainTileGraphics.TILE_TEXTURE_RESOLUTION, 1);
+                        break;
+                    default:
+                        gameObject.transform.localScale = new Vector3(properties.Get<int>("tileWidth"), properties.Get<int>("tileHeight"), 1);
+                        break;
+                }
+                gameObject.transform.localPosition = new Vector3(0, 0, -0.05f);
+
+                //Setup graphics
+                newEntity.gameObject = gameObject;
+                gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/Entity") as Material;
+                gameObject.GetComponent<Renderer>().material.SetTexture("_MainTex", newEntity.GetGraphics().texture(UnityEngine.Random.Range(0, newEntity.GetGraphics().variants)));
                 gameObject.GetComponent<Renderer>().sortingOrder = 1;
 
                 //Some final touches
@@ -221,10 +322,10 @@ namespace EndlessExpedition
                     entity.OnDeselect();
 
                     //Remove behaviour scripts
-                    int[] ids = entity.behaviourScriptIDs;
-                    for (int i = 0; i < ids.Length; i++)
+                    EntityBehaviourScript[] scripts = entity.BehaviourScripts;
+                    for (int i = 0; i < scripts.Length; i++)
                     {
-                        UnregisterEntityBehaviourScript(m_entityBehaviourScripts[ids[i]]);
+                        UnregisterEntityBehaviourScript(scripts[i]);
                     }
 
                     //Remove reference & destroy gameobject
@@ -248,9 +349,16 @@ namespace EndlessExpedition
             public void UnregisterEntityBehaviourScript(EntityBehaviourScript script)
             {
                 if (m_entityBehaviourScripts.Contains(script))
+                {
+                    Entity[] entities = script.AttachedTo;
+                    for (int i = 0; i < entities.Length; i++)
+                    {
+                        script.RemoveFromEntity(entities[i]);
+                    }
                     m_entityBehaviourScripts.Remove(script);
+                }
                 else
-                    Debug.LogError("You are trying to unregister a behaviour script that has not been registered yet.");
+                    CMD.Error("You are trying to unregister a behaviour script that has not been registered yet.");
             }
 
             public void LoadEntities(string folder)
@@ -309,7 +417,6 @@ namespace EndlessExpedition
                     if (entity != null)
                     {
                         entity.properties.SetAll(p);
-                        //entity
 
                         m_entityCache.Add(entity);
                     }
@@ -356,7 +463,7 @@ namespace EndlessExpedition
                 return result.ToArray();
             }
 
-            public T Find<T>(string identity) where T : Entity
+            public T FindFromCache<T>(string identity) where T : Entity
             {
                 T result = default(T);
                 
@@ -368,14 +475,33 @@ namespace EndlessExpedition
                 }
                 return result;
             }
+            public T[] FindAllFromCache<T>() where T : Entity
+            {
+                List<T> result = new List<T>();
+                for (int i = 0; i < m_entityCache.Count; i++)
+                {
+                    if (m_entityCache[i].GetType() == typeof(T))
+                        result.Add((T)m_entityCache[i]);
+                }
+                return result.ToArray();
+            }
+            public GraphicsBase FindGraphics(string identity)
+            {
+                for (int i = 0; i < m_entityCache.Count; i++)
+                {
+                    if (m_entityCache[i].Identity == identity)
+                        return m_entityCache[i].GetGraphics();
+                }
+                return null;
+            }
 
-            public T[] FindAll<T>()
+            public T[] FindAll<T>() where T : Entity
             {
                 List<T> result = new List<T>();
                 for (int i = 0; i < m_entities.Count; i++)
                 {
                     if (m_entities[i].GetType() == typeof(T))
-                        m_entities.Add(m_entities[i]);
+                        result.Add((T)m_entities[i]);
                 }
                 return result.ToArray();
             }
@@ -420,6 +546,88 @@ namespace EndlessExpedition
                 if (m_entityPlacementMap.GetDataAt(x, y))
                     return false;
                 return true;
+            }
+
+            public int LayerForEntityType(string type)
+            {
+                if (type == "actor")
+                    return 11;
+                if (type == "building")
+                    return 13;
+                if (type == "prop")
+                    return 12;
+                return 9;
+            }
+
+            //Console Commands
+            [ConsoleCommand("List entity identity of all loaded tiles (NOTE: not instantiated entities)")]
+            public static void CMDListEntityCache()
+            {
+                EntityManager EM = ManagerInstance.Get<EntityManager>();
+
+                //Actors
+                Actor[] actors = EM.FindAllFromCache<Actor>();
+                for (int i = 0; i < actors.Length; i++)
+                {
+                    CMD.Log(actors.GetType() + " : " + actors[i].Identity);
+                }
+                //Props
+                Prop[] props = EM.FindAllFromCache<Prop>();
+                for (int i = 0; i < props.Length; i++)
+                {
+                    CMD.Log(props.GetType() + " : " + props[i].Identity);
+                }
+                //Buildings
+                Building[] buildings = EM.FindAllFromCache<Building>();
+                for (int i = 0; i < buildings.Length; i++)
+                {
+                    CMD.Log(buildings.GetType() + " : " + buildings[i].Identity);
+                }
+            }
+            [ConsoleCommand("Spawns an actor at given coordinates")]
+            public static Entity CMDCreateActor(string _identity, string _x, string _y)
+            {
+                float x = float.Parse(_x);
+                float y = float.Parse(_y);
+                Entity prefab = ManagerInstance.Get<EntityManager>().FindFromCache<Actor>(_identity);
+
+                if (prefab == null)
+                {
+                    CMD.Error("Actor not found!: " + _identity);
+                    return null;
+                }
+
+                return ManagerInstance.Get<EntityManager>().CreateEntity<Actor>(prefab, x, y);
+            }
+            [ConsoleCommand("Spawns a prop at given coordinates")]
+            public static Entity CMDCreateProp(string _identity, string _x, string _y)
+            {
+                float x = float.Parse(_x);
+                float y = float.Parse(_y);
+                Entity prefab = ManagerInstance.Get<EntityManager>().FindFromCache<Prop>(_identity);
+
+                if (prefab == null)
+                {
+                    CMD.Error("Prop not found!: " + _identity);
+                    return null;
+                }
+
+                return ManagerInstance.Get<EntityManager>().CreateEntity<Prop>(prefab, x, y);
+            }
+            [ConsoleCommand("Builds a building at given coordinates")]
+            public static Entity CMDCreateBuilding(string _identity, string _x, string _y)
+            {
+                int x = int.Parse(_x);
+                int y = int.Parse(_y);
+                Building prefab = ManagerInstance.Get<EntityManager>().FindFromCache<Building>(_identity);
+
+                if (prefab == null)
+                {
+                    CMD.Error("Building not found!: " + _identity);
+                    return null;
+                }
+
+                return ManagerInstance.Get<BuildManager>().BuildBuilding(x, y, prefab, true);
             }
         }
     }

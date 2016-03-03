@@ -21,7 +21,7 @@
     <Value xsi:type="xsd:string">dynamic</Value>
   </Property>
   <Property>
-    <Key>itemContainerSlots</Key>
-    <Value xsi:type="xsd:int">4</Value>
+    <Key>entityBehaviourScripts</Key>
+    <Value xsi:type="xsd:string">SkybotHover/SkybotTrailParticles</Value>
   </Property>
 </ArrayOfProperty>

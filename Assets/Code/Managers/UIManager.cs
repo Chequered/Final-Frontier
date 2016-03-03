@@ -3,12 +3,12 @@
 using UnityEngine;
 
 using EndlessExpedition.UI;
-using EndlessExpedition.UI.Internal;
 using EndlessExpedition.Serialization;
 using EndlessExpedition.Terrain;
 using EndlessExpedition.Entities;
 using EndlessExpedition.Managers.Base;
 using EndlessExpedition.Entities.BuildingModules;
+using EndlessExpedition.Graphics;
 
 namespace EndlessExpedition
 {
@@ -39,6 +39,7 @@ namespace EndlessExpedition
                 list.AddButton(new ActionButton("Quick Save", ManagerInstance.Get<GameManager>().Save));
                 list.AddButton(new ActionButton("Quick Load", ManagerInstance.Get<GameManager>().Load));
                 list.AddButton(new ActionButton("Sim Tick", ManagerInstance.Get<SimulationManager>().SimulationTick));
+                list.AddButton(new ActionButton("Advance 1 Hour", ManagerInstance.Get<SimulationManager>().AdvanceOneHour));
                 //list.AddButton(new ActionButton("Resume All Production", ResumeAllProduction));
                 list.BuildUI();
                 list.position = new Vector2(0, Screen.height - list.windowSize.y);
@@ -93,6 +94,19 @@ namespace EndlessExpedition
                         return overlay.Value;
                 }
                 return null;
+            }
+
+            public IUI[] FindAll<T>() where T : IUI
+            {
+                List<IUI> result = new List<IUI>();
+
+                for (int i = 0; i < m_UI.Count; i++)
+                {
+                    if (m_UI[i].GetType() == typeof(T))
+                        result.Add(m_UI[i]);
+                }
+
+                return result.ToArray();
             }
 
             public BuildPlacementScreen buildingPlacementScreen

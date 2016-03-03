@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<ArrayOfProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Property>
+    <Key>type</Key>
+    <Value xsi:type="xsd:string">actor</Value>
+  </Property>
+    <Property>
+    <Key>actorType</Key>
+    <Value xsi:type="xsd:string">skybot</Value>
+  </Property>
+  <Property>
+    <Key>identity</Key>
+    <Value xsi:type="xsd:string">skybotBuilderSmall</Value>
+  </Property>
+  <Property>
+    <Key>displayName</Key>
+    <Value xsi:type="xsd:string">Small Builder Skybot</Value>
+  </Property>
+  <Property>
+    <Key>movementMode</Key>
+    <Value xsi:type="xsd:string">dynamic</Value>
+  </Property>
+  <Property>
+    <Key>entityBehaviourScripts</Key>
+    <Value xsi:type="xsd:string">SkybotHover/SkybotTrailParticles/SkybotBuilder</Value>
+  </Property>
+</ArrayOfProperty>

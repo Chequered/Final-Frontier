@@ -18,6 +18,36 @@ namespace EndlessExpedition
             //abstract vars
             protected string p_behaviourName = "Unnamed Behaviour";
 
+            public static List<Type> m_scriptTypes; 
+            public static void SearchBehaviourScripts()
+            {
+                m_scriptTypes = Extensions.GetListOfType<EntityBehaviourScript>();
+            }
+            public static EntityBehaviourScript CreateInstanceOf(string scriptName)
+            {
+                EntityBehaviourScript result = null;
+
+                Type t = null;
+                for (int i = 0; i < m_scriptTypes.Count; i++)
+                {
+                    if (scriptName == m_scriptTypes[i].Name.ToString())
+                    {
+                        t = m_scriptTypes[i];
+                        break;
+                    }
+                }
+
+                if (t == null)
+                {
+                    return null;
+                    throw new Exception("Behaviour script not found");
+                }
+
+                result = Activator.CreateInstance(t) as EntityBehaviourScript;
+
+                return result;
+            }
+
             public EntityBehaviourScript(string behaviourName)
             {
                 p_behaviourName = behaviourName;
@@ -47,6 +77,7 @@ namespace EndlessExpedition
                     entity.properties.Set("behaviourScripts", "\n" + p_behaviourName);
                 }
 
+                entity.AddBehaviourScript(this);
                 OnStart(entity);
             }
 
@@ -69,12 +100,12 @@ namespace EndlessExpedition
                         if (splitScripts[i] != p_behaviourName)
                             newScriptsText += "\n" + splitScripts[i];
                     }
-
+                    
                     entity.properties.Set("behaviourScripts", newScriptsText);
                 }
                 else
                 {
-                    Debug.LogError("You're trying to remove a behaviour script from an object that it is not attached to.");
+                    CMD.Error("You're trying to remove a behaviour script from an object that it is not attached to.");
                 }
             }
 
@@ -93,7 +124,7 @@ namespace EndlessExpedition
             }
 
             //getters
-            public string behaviourName
+            public string BehaviourName
             {
                 get
                 {
@@ -101,11 +132,18 @@ namespace EndlessExpedition
                 }
             }
 
-            public bool isEnabled
+            public bool IsEnabled
             {
                 get
                 {
                     return m_enabled;
+                }
+            }
+            public Entity[] AttachedTo
+            {
+                get
+                {
+                    return m_attachedTo.ToArray();
                 }
             }
         }

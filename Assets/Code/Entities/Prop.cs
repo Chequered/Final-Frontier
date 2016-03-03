@@ -6,6 +6,7 @@ using UnityEngine;
 using EndlessExpedition.Serialization;
 using EndlessExpedition.Managers;
 using EndlessExpedition.Graphics;
+using EndlessExpedition.UI;
 
 namespace EndlessExpedition
 {
@@ -22,6 +23,18 @@ namespace EndlessExpedition
 
                 properties.Secure("tileWidth", 1);
                 properties.Secure("tileHeight", 1);
+
+                EntityPropertyDisplay display = new EntityPropertyDisplay();
+                display.properties = p_properties;
+                display.displaySize = new Vector2(400, 15);
+                display.AddDisplay("Name: ", "displayName");
+                display.AddDisplay("Description: ", "description");
+                display.AddDisplay("Type: ", "propType");
+                display.menuName = properties.Get<string>("displayName") + ": Propety Menu";
+                display.BuildUI();
+                display.Toggle(false);
+                ManagerInstance.Get<UIManager>().AddUI(display);
+                p_UIGroup.AddUIElement(display);
             }
 
             public override void OnTick()

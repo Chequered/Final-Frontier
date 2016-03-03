@@ -77,10 +77,12 @@ namespace EndlessExpedition
                     if (masterStack.amount >= ItemStack.MAX_STACK_VALUE)
                     {
                         stacks[i] = new ItemStack(item, ItemStack.MAX_STACK_VALUE);
+                        stacks[i].container = this;
                     }
                     else
                     {
                         stacks[i] = new ItemStack(item, masterStack.amount);
+                        stacks[i].container = this;
                     }
                     masterStack.amount -= stacks[i].amount;
                 }
@@ -98,6 +100,7 @@ namespace EndlessExpedition
                     if (m_itemStacks[i].item.identity == itemIdentity)
                     {
                         result.Add(m_itemStacks[i]);
+                        m_itemStacks[i].container = null;
                         resultIndexes.Add(i);
                     }
                 }
@@ -122,7 +125,9 @@ namespace EndlessExpedition
                     if (m_itemStacks[i] == null)
                     {
                         m_itemStacks[i] = itemStack;
-                        
+                        itemStack.container = this;
+                        itemStack.OnTakeItems += OnStackUpdate;
+
                         if (OnStackUpdate != null)
                             OnStackUpdate(i);
 
@@ -136,6 +141,17 @@ namespace EndlessExpedition
                 if (m_itemStacks[slotIndex] == null)
                 {
                     m_itemStacks[slotIndex] = itemStack;
+                    m_itemStacks[slotIndex].container = this;
+                    m_itemStacks[slotIndex].OnTakeItems += OnStackUpdate;
+
+                    if (OnStackUpdate != null)
+                        OnStackUpdate(slotIndex);
+                    return true;
+                }
+                else if(m_itemStacks[slotIndex].item == itemStack.item)
+                {
+                    m_itemStacks[slotIndex].AddAmountFromStack(itemStack, itemStack.amount);
+                    m_itemStacks[slotIndex].OnTakeItems += OnStackUpdate;
 
                     if (OnStackUpdate != null)
                         OnStackUpdate(slotIndex);
@@ -167,6 +183,7 @@ namespace EndlessExpedition
                         if (m_itemStacks[i] == null)
                         {
                             m_itemStacks[i] = new ItemStack(production.item, 0);
+                            m_itemStacks[i].container = this;
                             avaiableStacks.Add(m_itemStacks[i]);
 
                             spaceNeeded -= ItemStack.MAX_STACK_VALUE;
@@ -185,7 +202,7 @@ namespace EndlessExpedition
                     avaiableStacks[a].AddAmountFromMasterStack(production, production.amount);
 
                     if (OnStackUpdate != null)
-                        OnStackUpdate(a);
+                        OnStackUpdate(System.Array.IndexOf(m_itemStacks, avaiableStacks[a]));
                 }
             }
 
@@ -205,6 +222,15 @@ namespace EndlessExpedition
                     result = true;
 
                 return result;
+            }
+            public KeyValuePair<bool, int> GetStackInfo(ItemStack itemStack)
+            {
+                for (int i = 0; i < m_itemStacks.Length; i++)
+                {
+                    if (m_itemStacks[i] == itemStack)
+                        return new KeyValuePair<bool, int>(true, i);
+                }
+                return new KeyValuePair<bool,int>(false, 0);
             }
 
             //Get Items
@@ -243,7 +269,13 @@ namespace EndlessExpedition
                 }
                 return null;
             }
-
+            public void DestroyStackAt(int slotIndex)
+            {
+                if (slotIndex < m_containerSize)
+                {
+                    m_itemStacks[slotIndex] = null;
+                }
+            }
             //Organize Items
             public void MergeAllStacks()
             {
@@ -290,6 +322,7 @@ namespace EndlessExpedition
                 for (int i = 0; i < newStacks.Count; i++)
                 {
                     m_itemStacks[i] = newStacks[i];
+                    m_itemStacks[i].container = this;
                 }
             }
 
@@ -297,6 +330,14 @@ namespace EndlessExpedition
             public void AddSlots(int slotsToAdd)
             {
                 m_containerSize += slotsToAdd;
+            }
+
+            public int size
+            {
+                get
+                {
+                    return m_containerSize;
+                }
             }
         }
     }

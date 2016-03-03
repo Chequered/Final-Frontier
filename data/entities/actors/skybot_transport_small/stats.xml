@@ -2,7 +2,7 @@
 <ArrayOfProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Property>
     <Key>itemContainerSlots</Key>
-    <Value xsi:type="xsd:int">4</Value>
+    <Value xsi:type="xsd:int">6</Value>
   </Property>
   <Property>
     <Key>movementSpeed</Key>
@@ -10,6 +10,6 @@
   </Property>
   <Property>
     <Key>rotationSpeed</Key>
-    <Value xsi:type="xsd:float">0.65</Value>
+    <Value xsi:type="xsd:float">60</Value>
   </Property>  
 </ArrayOfProperty>

@@ -16,7 +16,7 @@ namespace EndlessExpedition
             private float m_deltaTime = 0;
             private double m_timeToNextTick = 0;
             private GUISkin m_skin;
-            private bool m_enabled;
+            private bool m_enabled = true;
 
             private void Start()
             {
@@ -50,24 +50,12 @@ namespace EndlessExpedition
                 GUILayout.Label("<b>Camera Position: </b>" + Camera.main.transform.position);
                 GUILayout.Label("<b>Loaded Entities: </b>" + ManagerInstance.Get<EntityManager>().cachedEntityCount);
                 GUILayout.Label("<b>Active Entities: </b>" + ManagerInstance.Get<EntityManager>().activeEntityCount);
+                GUILayout.Label("<b>Time: </b>" + ManagerInstance.Get<SimulationManager>().timeAsString);
             }
 
             private void Toggle()
             {
                 m_enabled = !m_enabled;
-
-                if (m_enabled)
-                {
-                    Image i = GameObject.Find("ScreenOverlay").GetComponent<Image>();
-                    Color c = i.color; c.a = 0.25f;
-                    i.color = c;
-                }
-                else
-                {
-                    Image i = GameObject.Find("ScreenOverlay").GetComponent<Image>();
-                    Color c = i.color; c.a = 0;
-                    i.color = c;
-                }
 
             }
 

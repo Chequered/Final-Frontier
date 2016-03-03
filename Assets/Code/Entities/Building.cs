@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 using EndlessExpedition.Managers;
 using EndlessExpedition.Graphics;
-using EndlessExpedition.Items;
+using EndlessExpedition.Entities.Construction;
 using EndlessExpedition.UI;
 using EndlessExpedition.Entities.BuildingModules;
 
@@ -16,14 +16,20 @@ namespace EndlessExpedition
     {
         public class Building : Entity
         {
-            private const float STATUS_ICON_SCALE = 0.24f;
+            private const float STATUS_ICON_SCALE = 0.16f;
 
             private BuildingGraphics m_graphics;
+            private ConstructionHeader m_constructionHeader;
             private List<BuildingModule> m_modules;
+
+            private bool m_isBuilt;
 
             //Alert UI
             private GameObject m_localCanvas;
             private Dictionary<string, GameObject> m_statusIcons;
+
+            //Light vars
+            private float m_maxLightStrength;
 
             public override void OnStart()
             {
@@ -35,10 +41,24 @@ namespace EndlessExpedition
                 m_statusIcons = new Dictionary<string, GameObject>();
                 m_modules = new List<BuildingModule>();
 
-                if(properties.Has("produces"))
+                GenerateIconObject();
+                GenerateLight();
+                GenerateModules();
+                
+                Color c = gameObject.GetComponent<Renderer>().material.color;
+                c.a = 0.25f;
+                gameObject.GetComponent<Renderer>().material.color = c;
+
+                if (properties.Has("produces"))
                 {
-                    AddModule(new ProductionModule());
+                    ProductionModule PM = new ProductionModule();
+                    AddModule(PM);
+                    PM.TogglePause(false);
                 }
+
+                if (properties.Has("buildMode"))
+                    if (properties.Get<string>("buildMode") == "construction")
+                        m_constructionHeader = new ConstructionHeader(this);
 
                 #region Building menus
 
@@ -51,12 +71,7 @@ namespace EndlessExpedition
                 ManagerInstance.Get<UIManager>().AddUI(debugMenu);
                 p_UIGroup.AddUIElement(debugMenu);
 
-                if (GetModule<ProductionModule>() != null)
-                    debugMenu.AddButton(new ActionButton("Toggle Pause", GetModule<ProductionModule>().TogglePause));
-
                 #endregion
-                GenerateIconObject();
-                GenerateLight();
             }
 
             public override void OnTick()
@@ -67,8 +82,24 @@ namespace EndlessExpedition
             public override void OnUpdate()
             {
                 base.OnUpdate();
+                
+                if (!m_isBuilt)
+                    return;
+
+                UpdateLights();
             }
-            
+
+            #region UpdateMethods
+            private void UpdateLights()
+            {
+                int hours = ManagerInstance.Get<SimulationManager>().currentHour;
+                if (hours > 7 && hours < 17)
+                    light.enabled = false;
+                else if (hours >= 17)
+                    light.enabled = true;
+            }
+            #endregion
+
             public override void SetGraphics(GraphicsBase graphics)
             {
                 m_graphics = graphics as BuildingGraphics;
@@ -82,6 +113,67 @@ namespace EndlessExpedition
             public override void OnDeselect()
             {
                 base.OnDeselect();
+            }
+
+            public void OnBuild()
+            {
+                m_isBuilt = true;
+                
+                Color c = gameObject.GetComponent<Renderer>().material.color;
+                c.a = 1f;
+                gameObject.GetComponent<Renderer>().material.color = c;
+
+                if (GetModule<ProductionModule>() != null)
+                    p_UIGroup.GetElement<ActionMenuList>().AddButton(new ActionButton("Toggle Pause", GetModule<ProductionModule>().TogglePause));
+
+                if (GameManager.gameState == GameState.LoadingSave || GameManager.gameState == GameState.StartingSave)
+                    return;
+
+                #region Spawn children
+                if (properties.Has("spawnOnBuild"))
+                {
+                    string[] split = properties.Get<string>("spawnOnBuild").Split('/');
+                    for (int i = 0; i < split.Length; i++)
+                    {
+                        string type = split[i].Split(':')[0];
+                        string id = split[i].Split(':')[1];
+
+                        Entity prefab = null;
+                        Entity entity = null;
+
+                        switch (type)
+                        {
+                            case "Actor":
+                                prefab = ManagerInstance.Get<EntityManager>().FindFromCache<Actor>(id);
+                                if (prefab != null)
+                                {
+                                    entity = ManagerInstance.Get<EntityManager>().CreateEntity<Actor>(prefab, tilePosition.x, tilePosition.y);
+                                }
+                                break;
+                            case "Prop":
+                                prefab = ManagerInstance.Get<EntityManager>().FindFromCache<Prop>(id);
+                                if (prefab != null)
+                                {
+                                    entity = ManagerInstance.Get<EntityManager>().CreateEntity<Prop>(prefab, tilePosition.x, tilePosition.y);
+                                }
+                                break;
+                            case "Building":
+                                prefab = ManagerInstance.Get<EntityManager>().FindFromCache<Building>(id);
+                                if (prefab != null)
+                                {
+                                    entity = ManagerInstance.Get<EntityManager>().CreateEntity<Building>(prefab, tilePosition.x, tilePosition.y);
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                        if (entity != null)
+                        {
+                            p_spawnedEntities.Add(entity);
+                        }
+                    }
+                }
+                #endregion
             }
 
             #region Modules
@@ -99,7 +191,6 @@ namespace EndlessExpedition
                     if(module != null)
                     {
                         AddModule(module);
-                        Debug.Log(module.identity);
                     }
                 }
             }
@@ -111,7 +202,7 @@ namespace EndlessExpedition
             public void AddModule(BuildingModule module)
             {
                 m_modules.Add(module);
-                module.building = this;
+                module.Building = this;
                 module.OnStart();
             }
             public T GetModule<T>() where T : BuildingModule
@@ -130,18 +221,41 @@ namespace EndlessExpedition
             {
                 return m_graphics;
             }
+            public bool IsBuilt
+            {
+                get
+                {
+                    return m_isBuilt;
+                }
+            }
+            public Canvas LocalCanvas
+            {
+                get
+                {
+                    return m_localCanvas.GetComponent<Canvas>();
+                }
+            }
+            public ConstructionHeader ConstructionHeader
+            {
+                get
+                {
+                    return m_constructionHeader;
+                }
+            }
             #endregion
 
             #region Status icons methods
             public void GenerateIconObject()
             {
                 m_localCanvas = new GameObject("Local Canvas");
+
                 Canvas canvas = m_localCanvas.AddComponent<Canvas>();
                 RectTransform transform = m_localCanvas.GetComponent<RectTransform>();
 
                 canvas.renderMode = RenderMode.WorldSpace;
+                canvas.sortingOrder = 1;
 
-                transform.position = new Vector3(0, 0);
+                transform.localPosition = new Vector3(0, 0, -0.05f);
                 transform.sizeDelta = new Vector2(1, 1);
                 transform.SetParent(p_gameObject.transform, false);
             }
@@ -161,8 +275,6 @@ namespace EndlessExpedition
                 transform.pivot = Vector2.zero;
                 transform.anchorMin = Vector2.zero;
                 transform.anchorMax = Vector2.zero;
-                int m = properties.Get<int>("tileWidth");
-                transform.localScale = new Vector3(STATUS_ICON_SCALE * m, STATUS_ICON_SCALE * m);
 
                 m_statusIcons.Add(statusIdentity, icObj);
                 RepositionStatusIcons();

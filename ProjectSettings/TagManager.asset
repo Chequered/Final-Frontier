@@ -6,6 +6,9 @@ TagManager:
   tags:
   - PropertyInspector
   - UI
+  - Sun
+  - ItemTransferPreview
+  - Skybox
   layers:
   - Default
   - TransparentFX
@@ -18,10 +21,10 @@ TagManager:
   - Terrain
   - Orthographic
   - Outline
-  - 
-  - 
-  - 
-  - 
+  - Actor
+  - Prop
+  - Building
+  - Skybox
   - 
   - 
   - 

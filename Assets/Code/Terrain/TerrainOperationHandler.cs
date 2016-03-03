@@ -50,15 +50,23 @@ namespace EndlessExpedition
                     if (cache != null)
                     {
                         //Cache found
-                        terrainTex.SetPixels(tileDrawQueue[i].x * res, tileDrawQueue[i].y * res, res, res, cache);
+                        terrainTex.SetPixels(tileDrawQueue[i].localX * res, tileDrawQueue[i].localY * res, res, res, cache);
                         cached++;
                     }
                     else
                     {
                         //No cache found, drawing new one
                         TerrainTileGraphics graphics = ManagerInstance.Get<TerrainManager>().FindTerrainTileCache(tileDrawQueue[i].identity).graphics;
-                        Color[] tex = graphics.GetTextureData(UnityEngine.Random.Range(0, graphics.variants));
-                        terrainTex.SetPixels(tileDrawQueue[i].x * res, tileDrawQueue[i].y * res, res, res, tex);
+                        Color[] tex = new Color[TerrainTileGraphics.TILE_TEXTURE_RESOLUTION * TerrainTileGraphics.TILE_TEXTURE_RESOLUTION];
+
+                        int variant = UnityEngine.Random.Range(0, graphics.variants);
+                        for (int pixel = 0; pixel < tex.Length; pixel++)
+                        {
+                            tex[pixel] = graphics.GetTextureData(variant)[pixel];
+                        }
+
+                        TileTexture(tex, tileDrawQueue[i].x, tileDrawQueue[i].y);
+                        terrainTex.SetPixels(tileDrawQueue[i].localX * res, tileDrawQueue[i].localY * res, res, res, tex);
 
                         //Caching new Texture
                         TerrainTileGraphicsCached graphicsCache = new TerrainTileGraphicsCached();
@@ -66,7 +74,7 @@ namespace EndlessExpedition
                         graphicsCache.textureData = tex;
                         ManagerInstance.Get<TerrainManager>().CacheTexture(graphicsCache);
                     }
-                    if (i % 16 == 0)
+                    if (i % TerrainChunk.SIZE / 2 == 0)
                         yield return new WaitForEndOfFrame();
                 }
                 tileDrawQueue.Clear();
@@ -92,6 +100,216 @@ namespace EndlessExpedition
                 }
             }
             #endregion
+
+            private void TileTexture(Color[] pix, int x, int y)
+            {
+                int TILE_RESOLUTION = TerrainTileGraphics.TILE_TEXTURE_RESOLUTION;
+                TerrainTile tile = ManagerInstance.Get<TerrainManager>().tiles[x, y];
+                TerrainTileCache cached = ManagerInstance.Get<TerrainManager>().FindTerrainTileCache(tile.identity);
+
+                if (TerrainManager.isLocationValid(x, y))
+                {
+                    if (x - 1 >= 0 && tile.neighborInfo.left != "void" && tile.identity != "void")
+                        if (tile.neighborInfo.left != tile.identity)
+                        {
+                            TerrainTileCache neighborCache = ManagerInstance.Get<TerrainManager>().FindTerrainTileCache(tile.neighborInfo.left);
+                            if (cached.loadID > neighborCache.loadID) //Load ID deciced who gets the gradient
+                            {
+                                Color[] neightborTex = neighborCache.graphics.texture().GetPixels();
+                                for (int i = 0; i < pix.Length; i++)
+                                {
+                                    Gradient gradient = new Gradient();
+
+                                    GradientColorKey[] gck = new GradientColorKey[2];
+                                    gck[0].color = pix[i];
+                                    gck[0].time = 0.0f;
+                                    gck[1].color = neightborTex[i];
+                                    gck[1].time = 1.0f;
+
+                                    // Populate the alpha  keys at relative time 0 and 1  (0 and 100%)
+                                    GradientAlphaKey[] gak = new GradientAlphaKey[2];
+                                    gak[0].alpha = 1.0f;
+                                    gak[0].time = 0.0f;
+                                    gak[1].alpha = 1f;
+                                    gak[1].time = 1.0f;
+
+                                    gradient.SetKeys(gck, gak);
+
+                                    if (i % TILE_RESOLUTION == 0)
+                                    {
+                                        pix[i] = gradient.Evaluate(1f);
+                                    }
+                                    if ((i - 1) % TILE_RESOLUTION == 0)
+                                    {
+                                        pix[i] = gradient.Evaluate(0.8f);
+                                    }
+                                    if ((i - 2) % TILE_RESOLUTION == 0)
+                                    {
+                                        pix[i] = gradient.Evaluate(0.6f);
+                                    }
+                                    if ((i - 3) % TILE_RESOLUTION == 0)
+                                    {
+                                        pix[i] = gradient.Evaluate(0.4f);
+                                    }
+                                    if ((i - 4) % TILE_RESOLUTION == 0)
+                                    {
+                                        pix[i] = gradient.Evaluate(0.2f);
+                                    }
+                                }
+                            }
+                        }
+                    if (y + 1 < TerrainManager.worldSize && tile.neighborInfo.top != "void" && tile.identity != "void")
+                        if (tile.neighborInfo.top != "void" && tile.neighborInfo.top != tile.identity)
+                        {
+                            TerrainTileCache neighborCache = ManagerInstance.Get<TerrainManager>().FindTerrainTileCache(tile.neighborInfo.top);
+                            if (cached.loadID > neighborCache.loadID) //Load ID deciced who gets the gradient
+                            {
+                                Color[] neightborTex = neighborCache.graphics.texture().GetPixels();
+
+                                for (int i = 0; i < pix.Length; i++)
+                                {
+                                    Gradient gradient = new Gradient();
+
+                                    GradientColorKey[] gck = new GradientColorKey[2];
+                                    gck[0].color = pix[i];
+                                    gck[0].time = 0.0f;
+                                    gck[1].color = neightborTex[i];
+                                    gck[1].time = 1.0f;
+
+                                    // Populate the alpha  keys at relative time 0 and 1  (0 and 100%)
+                                    GradientAlphaKey[] gak = new GradientAlphaKey[2];
+                                    gak[0].alpha = 1.0f;
+                                    gak[0].time = 0.0f;
+                                    gak[1].alpha = 1f;
+                                    gak[1].time = 1.0f;
+
+                                    gradient.SetKeys(gck, gak);
+
+                                    if (i > pix.Length - (TILE_RESOLUTION + 1))
+                                    {
+                                        pix[i] = gradient.Evaluate(1f);
+                                    }
+                                    if (i > pix.Length - (TILE_RESOLUTION + 1) * 2 && i < pix.Length - (TILE_RESOLUTION))
+                                    {
+                                        pix[i] = gradient.Evaluate(0.8f);
+                                    }
+                                    if (i > pix.Length - (TILE_RESOLUTION + 1) * 3 && i < pix.Length - (TILE_RESOLUTION) * 2)
+                                    {
+                                        pix[i] = gradient.Evaluate(0.6f);
+                                    }
+                                    if (i > pix.Length - (TILE_RESOLUTION + 1) * 4 && i < pix.Length - (TILE_RESOLUTION) * 3)
+                                    {
+                                        pix[i] = gradient.Evaluate(0.4f);
+                                    }
+                                    if (i > pix.Length - (TILE_RESOLUTION + 1) * 5 && i < pix.Length - (TILE_RESOLUTION) * 4)
+                                    {
+                                        pix[i] = gradient.Evaluate(0.2f);
+                                    }
+                                }
+                            }
+                        }
+                    if (x + 1 < TerrainManager.worldSize && tile.neighborInfo.right != "void" && tile.identity != "void")
+                        if (tile.neighborInfo.right != "void" && tile.neighborInfo.right != tile.identity)
+                        {
+                            TerrainTileCache neighborCache = ManagerInstance.Get<TerrainManager>().FindTerrainTileCache(tile.neighborInfo.right);
+                            if (cached.loadID > neighborCache.loadID) //Load ID deciced who gets the gradient
+                            {
+                                Color[] neightborTex = neighborCache.graphics.texture().GetPixels();
+
+                                for (int i = 0; i < pix.Length; i++)
+                                {
+                                    Gradient gradient = new Gradient();
+
+                                    GradientColorKey[] gck = new GradientColorKey[2];
+                                    gck[0].color = pix[i];
+                                    gck[0].time = 0.0f;
+                                    gck[1].color = neightborTex[i];
+                                    gck[1].time = 1.0f;
+
+                                    // Populate the alpha  keys at relative time 0 and 1  (0 and 100%)
+                                    GradientAlphaKey[] gak = new GradientAlphaKey[2];
+                                    gak[0].alpha = 1.0f;
+                                    gak[0].time = 0.0f;
+                                    gak[1].alpha = 1f;
+                                    gak[1].time = 1.0f;
+
+                                    gradient.SetKeys(gck, gak);
+
+                                    if ((i + 1) % TILE_RESOLUTION == 0)
+                                    {
+                                        pix[i] = gradient.Evaluate(1);
+                                    }
+                                    if ((i + 2) % TILE_RESOLUTION == 0)
+                                    {
+                                        pix[i] = gradient.Evaluate(0.8f);
+                                    }
+                                    if ((i + 3) % TILE_RESOLUTION == 0)
+                                    {
+                                        pix[i] = gradient.Evaluate(0.6f);
+                                    }
+                                    if ((i + 4) % TILE_RESOLUTION == 0)
+                                    {
+                                        pix[i] = gradient.Evaluate(0.4f);
+                                    }
+                                    if ((i + 5) % TILE_RESOLUTION == 0)
+                                    {
+                                        pix[i] = gradient.Evaluate(0.2f);
+                                    }
+                                }
+                            }
+                        }
+                    if (y - 1 >= 0 && tile.neighborInfo.bottom != "void" && tile.identity != "void")
+                        if (tile.neighborInfo.bottom != "void" && tile.neighborInfo.bottom != tile.identity)
+                        {
+                            TerrainTileCache neighborCache = ManagerInstance.Get<TerrainManager>().FindTerrainTileCache(tile.neighborInfo.bottom);
+                            if (cached.loadID > neighborCache.loadID) //Load ID deciced who gets the gradient
+                            {
+                                Color[] neightborTex = neighborCache.graphics.texture().GetPixels();
+
+                                for (int i = 0; i < pix.Length; i++)
+                                {
+                                    Gradient gradient = new Gradient();
+
+                                    GradientColorKey[] gck = new GradientColorKey[2];
+                                    gck[0].color = pix[i];
+                                    gck[0].time = 0.0f;
+                                    gck[1].color = neightborTex[i];
+                                    gck[1].time = 1.0f;
+
+                                    // Populate the alpha  keys at relative time 0 and 1  (0 and 100%)
+                                    GradientAlphaKey[] gak = new GradientAlphaKey[2];
+                                    gak[0].alpha = 1.0f;
+                                    gak[0].time = 0.0f;
+                                    gak[1].alpha = 1f;
+                                    gak[1].time = 1.0f;
+
+                                    gradient.SetKeys(gck, gak);
+
+                                    if (i <= TILE_RESOLUTION)
+                                    {
+                                        pix[i] = gradient.Evaluate(1f);
+                                    }
+                                    if (i <= TILE_RESOLUTION * 2 && i > TILE_RESOLUTION)
+                                    {
+                                        pix[i] = gradient.Evaluate(0.8f);
+                                    }
+                                    if (i <= TILE_RESOLUTION * 3 && i > TILE_RESOLUTION * 2)
+                                    {
+                                        pix[i] = gradient.Evaluate(0.6f);
+                                    }
+                                    if (i <= TILE_RESOLUTION * 4 && i > TILE_RESOLUTION * 3)
+                                    {
+                                        pix[i] = gradient.Evaluate(0.4f);
+                                    }
+                                    if (i <= TILE_RESOLUTION * 5 && i > TILE_RESOLUTION * 4)
+                                    {
+                                        pix[i] = gradient.Evaluate(0.2f);
+                                    }
+                                }
+                            }
+                        }
+                }
+            }
         }
     }
 }

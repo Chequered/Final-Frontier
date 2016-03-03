@@ -55,24 +55,24 @@ namespace EndlessExpedition
             }
 
             //LineRenderer
-            public void InitializeMovementLine()
+            public virtual void InitializeActiveGraphics()
             {
-                Color lineColor = new Color(55, 55, 55, 0.55f);
+                Color lineColor = new Color(0.25f, 0.25f, 0.25f, 0.55f);
                 m_lineRenderer = m_actor.gameObject.AddComponent<LineRenderer>();
-                m_lineRenderer.material.shader = Shader.Find("Unlit/Transparent");
+                m_lineRenderer.material = Resources.Load<Material>("Materials/ActorLine");
                 m_lineRenderer.SetVertexCount(2);
                 m_lineRenderer.SetColors(lineColor, lineColor);
                 m_lineRenderer.enabled = false;
                 m_lineRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 m_lineRenderer.receiveShadows = false;
                 m_lineRenderer.SetWidth(0.075f, 0.075f);
-                m_lineRenderer.material.shader = Shader.Find("Unlit/Color");
+                m_actor.gameObject.GetComponent<Renderer>().sortingOrder += 1;
             }
             public void UpdateMovementLine()
             {
                 if (m_lineRenderer == null)
                     return;
-
+                
                 if(m_actor.targetPosition != Vector3.zero)
                 {
                     m_lineRenderer.SetPosition(0, m_actor.gameObject.transform.position);
@@ -82,6 +82,14 @@ namespace EndlessExpedition
             public void ToggleMovementLine(bool state)
             {
                 m_lineRenderer.enabled = state;
+            }
+            public void SetLineColor(Color color)
+            {
+                m_lineRenderer.SetColors(color, color);
+            }
+            public void SetLinePositions(Vector3[] positions)
+            {
+                m_lineRenderer.SetPositions(positions);
             }
 
             private void OnTargetSet(Entity entity, Vector3 target)
@@ -99,6 +107,14 @@ namespace EndlessExpedition
             private void OnTargetReached(Entity entity, Building target)
             {
                 ToggleMovementLine(false);
+            }
+
+            public LineRenderer LineRenderer
+            {
+                get
+                {
+                    return m_lineRenderer;
+                }
             }
         }
     }

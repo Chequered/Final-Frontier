@@ -67,7 +67,7 @@ namespace EndlessExpedition
                 }
                 set
                 {
-                    Debug.LogWarning("Gamestate change, from: " + m_gameState + " to " + value);
+                    CMD.Warning("Gamestate change, from: " + m_gameState + " to " + value);
                     m_gameState = value;
                 }
             }
@@ -80,6 +80,12 @@ namespace EndlessExpedition
 
                     return GameObject.Find("SaveData").GetComponent<SaveDataContainer>();
                 }
+            }
+
+            [ConsoleCommand("Saves the game using currnt timestamp as filename")]
+            public static void CMDSave()
+            {
+                ManagerInstance.Get<GameManager>().Save();
             }
         }
     }

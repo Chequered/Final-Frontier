@@ -7,6 +7,7 @@ using EndlessExpedition.Serialization;
 using EndlessExpedition.Managers;
 using EndlessExpedition.Graphics;
 using EndlessExpedition.UI;
+using EndlessExpedition.Terrain;
 using EndlessExpedition.Items;
 
 namespace EndlessExpedition
@@ -66,13 +67,14 @@ namespace EndlessExpedition
             //References
             protected EntityManager p_EM;
             protected GameObject p_gameObject;
-            private List<int> m_behaviourScriptIDs;
+            protected List<Entity> p_spawnedEntities;
+            private List<EntityBehaviourScript> m_behaviourScripts;
 
             //Properties & Graphics
             protected Properties p_properties;
 
             //active vars
-            private bool m_selected = false;
+            protected bool p_selected = false;
             private Light m_light;
             private ItemContainer m_itemContainer;
 
@@ -107,6 +109,8 @@ namespace EndlessExpedition
                 p_UIGroup = new EntityUIGroup();
                 OnSelectEvent += ToggleSelectionEmission;
                 OnDeselectEvent += ToggleSelectionEmission;
+                
+                p_spawnedEntities = new List<Entity>();
 
                 #region Read properties
                 if (properties.Has("itemContainerSlots"))
@@ -125,7 +129,52 @@ namespace EndlessExpedition
 
                     containerDisplay.position = new Vector2(Screen.width -containerDisplay.windowSize.x, 0);
                 }
+                if(properties.Has("spawnOnStart"))
+                {
+                    string[] split = properties.Get<string>("spawnOnStart").Split('/');
+                    for (int i = 0; i < split.Length; i++)
+                    {
+                        string type = split[i].Split(':')[0];
+                        string id = split[i].Split(':')[1];
+
+                        Entity prefab = null;
+                        Entity entity = null;
+
+                        switch (type)
+	                    {
+                            case "Actor":
+                                prefab = ManagerInstance.Get<EntityManager>().FindFromCache<Actor>(id);
+                                if (prefab != null)
+                                {
+                                    entity = ManagerInstance.Get<EntityManager>().CreateEntity<Actor>(prefab, tilePosition.x, tilePosition.y);
+                                } 
+                                break;
+                            case "Prop":
+                                prefab = ManagerInstance.Get<EntityManager>().FindFromCache<Prop>(id);
+                                if (prefab != null)
+                                {
+                                    entity = ManagerInstance.Get<EntityManager>().CreateEntity<Prop>(prefab, tilePosition.x, tilePosition.y);
+                                }
+                                break;
+                            case "Building":
+                                prefab = ManagerInstance.Get<EntityManager>().FindFromCache<Building>(id);
+                                if (prefab != null)
+                                {
+                                    entity = ManagerInstance.Get<EntityManager>().CreateEntity<Building>(prefab, tilePosition.x, tilePosition.y);
+                                }
+                                break;
+		                    default:
+                            break;
+                        }
+                        if(entity != null)
+                        {
+                            entity.GenerateBehaviourScripts();
+                            p_spawnedEntities.Add(entity);
+                        }
+                    }
+                }
                 #endregion
+                GenerateBehaviourScripts();
             }
 
             /// <summary>
@@ -147,17 +196,16 @@ namespace EndlessExpedition
             }
 
             /// <summary>
-            /// Called when the managers are loaded. use this when loading your graphics.
+            /// Called when the managers are loaded. use this when loading your graphics / instatiating vars.
             /// </summary>
             public virtual void OnLoad()
             {
-                m_behaviourScriptIDs = new List<int>();
+
             }
 
             public virtual void OnSelect()
             {
-                //ManagerInstance.Get<UIManager>().propertyInspector.SetInspectingEntity(this);
-                m_selected = true;
+                p_selected = true;
 
                 if (OnSelectEvent != null)
                     OnSelectEvent(this, true);
@@ -167,8 +215,7 @@ namespace EndlessExpedition
 
             public virtual void OnDeselect()
             {
-                //ManagerInstance.Get<UIManager>().propertyInspector.Close();
-                m_selected = false;
+                p_selected = false;
 
 
                 if (OnDeselectEvent != null)
@@ -256,6 +303,10 @@ namespace EndlessExpedition
                         m_light.color = new Color(r, g, b, a);
                     }
                 }
+
+                if (GetType() == typeof(Building))
+                    if (!(this as Building).IsBuilt)
+                        m_light.enabled = false;
             }
 
             /// <summary>
@@ -302,11 +353,11 @@ namespace EndlessExpedition
             public virtual void GoToGamePos(float x, float y, float z, bool forceStatic = false)
             {
                 if (p_properties.Has("movementMode") && !forceStatic)
-                    if(p_properties.Get<string>("movementMode") == "dynamic")
+                    if (p_properties.Get<string>("movementMode") == "dynamic")
                         return;
 
-                p_properties.Set("x", x);
-                p_properties.Set("y", y);
+                p_properties.Set("x", (int)x);
+                p_properties.Set("y", (int)y);
                 p_gameObject.transform.position = new Vector3(
                     (x - EndlessExpedition.Terrain.TerrainChunk.SIZE / 2) + ((float)GetGraphics().tileWidth / 2),
                     (y - EndlessExpedition.Terrain.TerrainChunk.SIZE / 2) + ((float)GetGraphics().tileHeight / 2),
@@ -326,9 +377,57 @@ namespace EndlessExpedition
                 }
 
             }
+            public void AddBehaviourScript(EntityBehaviourScript script)
+            {
+                if(m_behaviourScripts == null)
+                    m_behaviourScripts = new List<EntityBehaviourScript>();
 
-            //Getters & Setters
+                m_behaviourScripts.Add(script);
+            }
+            public T GetBehaviourScript<T>() where T : EntityBehaviourScript
+            {
+                if (m_behaviourScripts == null)
+                    return default(T);
+                for (int i = 0; i < m_behaviourScripts.Count; i++)
+                {
+                    if (m_behaviourScripts[i].GetType() == typeof(T))
+                        return (T)m_behaviourScripts[i] as T;
+                }
+                return default(T);
+            }
+            public void RemoveBehaviourScript<T>() where T : EntityBehaviourScript
+            {
+                if (m_behaviourScripts == null)
+                    return;
+                for (int i = 0; i < m_behaviourScripts.Count; i++)
+                {
+                    if (m_behaviourScripts[i].GetType() == typeof(T))
+                    {
+                        m_behaviourScripts[i].RemoveFromEntity(this);
+                        m_behaviourScripts.RemoveAt(i);
+                        return;
+                    }
+                }
+            }
+            public void RemoveBehaviourScript(EntityBehaviourScript script)
+            {
+                if (m_behaviourScripts == null)
+                    return;
+                if (m_behaviourScripts.Contains(script))
+                {
+                    m_behaviourScripts.Remove(script);
+                    script.RemoveFromEntity(this);
+                }
+            }
+
             #region Getters & Setters
+            public EntityBehaviourScript[] BehaviourScripts
+            {
+                get
+                {
+                    return m_behaviourScripts.ToArray();
+                }
+            }
             public Properties properties
             {
                 get
@@ -341,7 +440,7 @@ namespace EndlessExpedition
                     return p_properties;
                 }
             }
-            public string identity
+            public string Identity
             {
                 get
                 {
@@ -352,7 +451,7 @@ namespace EndlessExpedition
             {
                 get
                 {
-                    return m_selected;
+                    return p_selected;
                 }
             }
             public Vector2 tilePosition
@@ -366,24 +465,7 @@ namespace EndlessExpedition
             {
                 get
                 {
-                    Vector2 result = Vector2.zero;
-                    result.x = (tilePosition.x - EndlessExpedition.Terrain.TerrainChunk.SIZE / 2) + ((float)GetGraphics().tileWidth / 2);
-                    result.y = (tilePosition.y - EndlessExpedition.Terrain.TerrainChunk.SIZE / 2) + ((float)GetGraphics().tileHeight / 2);
-                    return result;
-                }
-            }
-            public EntityPositionStatus positionStatus
-            {
-                set
-                {
-                    if (value == EntityPositionStatus.InAir)
-                        p_gameObject.layer = Entity.LAYER_IN_AIR;
-                    else
-                    {
-                        Vector3 groundPos = p_gameObject.transform.position;
-                        groundPos.z = -ON_GROUND_HEIGHT;
-                        p_gameObject.transform.position = groundPos;
-                    }
+                    return gameObject.transform.position;
                 }
             }
             public GameObject gameObject
@@ -411,25 +493,41 @@ namespace EndlessExpedition
                     return m_itemContainer;
                 }
             }
-            public int[] behaviourScriptIDs
+            public EntityUIGroup uiGroup
             {
                 get
                 {
-                    return m_behaviourScriptIDs.ToArray();
+                    return p_UIGroup;
                 }
             }
+            public void GenerateBehaviourScripts()
+            {
+                if(properties.Has("entityBehaviourScripts"))
+                {
+                    string[] names = properties.Get<string>("entityBehaviourScripts").Split('/');
+                    EntityBehaviourScript[] scripts = new EntityBehaviourScript[names.Length];
 
+                    for (int i = 0; i < names.Length; i++)
+                    {
+                        scripts[i] = EntityBehaviourScript.CreateInstanceOf(names[i]);
+
+                        if (scripts[i] != null)
+                            scripts[i].AttachToEntity(this);
+                    }
+                }
+            }
 
             public abstract GraphicsBase GetGraphics();
             public abstract void SetGraphics(GraphicsBase graphics);
             #endregion
+
             //static helpers
             public static Vector2 ConvertGameToUnityPosition(Vector2 tilePosition, int tileWidth, int tileHeight)
             {
                 Vector2 result = Vector2.zero;
-                result.x = (tilePosition.x - EndlessExpedition.Terrain.TerrainChunk.SIZE / 2) + ((float)tileWidth / 2);
-                result.y = (tilePosition.y - EndlessExpedition.Terrain.TerrainChunk.SIZE / 2) + ((float)tileHeight / 2);
-                return result;
+                result.x = (tilePosition.x - TerrainChunk.SIZE / 2) + ((float)tileWidth / 2);
+                result.y = (tilePosition.y - TerrainChunk.SIZE / 2) + ((float)tileHeight / 2);
+                return result + new Vector2(TerrainChunk.SIZE / 2 - 0.5f, TerrainChunk.SIZE / 2 - 0.5f);
             }
         }
     }

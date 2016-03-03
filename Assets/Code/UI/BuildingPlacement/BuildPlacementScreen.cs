@@ -49,11 +49,11 @@ namespace EndlessExpedition
                 if (currentTile == null || m_selectedBuilding == null || !m_enabled || UIManager.hasMouseOver)
                     return;
 
-                if (ManagerInstance.Get<BuildManager>().CheckBuildLocation((int)currentTile.gamePosition.x, (int)currentTile.gamePosition.y,
+                if (ManagerInstance.Get<BuildManager>().CheckBuildLocation((int)currentTile.x, (int)currentTile.y,
                     m_selectedBuilding.properties.Get<int>("tileWidth"),
                     m_selectedBuilding.properties.Get<int>("tileHeight")))
                 {
-                    ManagerInstance.Get<BuildManager>().BuildBuildingAt((int)currentTile.gamePosition.x, (int)currentTile.gamePosition.y, m_selectedBuilding);
+                    ManagerInstance.Get<BuildManager>().BuildBuilding((int)currentTile.x, (int)currentTile.y, m_selectedBuilding);
                 }
             }
 

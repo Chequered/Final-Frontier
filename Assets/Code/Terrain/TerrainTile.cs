@@ -16,13 +16,14 @@ namespace EndlessExpedition
             private TerrainChunk m_chunk;
 
             //Properties
-            public int x, y;
+            private int m_x, m_y;
+            private int m_LX, m_LY;
             private Properties m_properties;
 
             //Demographic
             private TerrainTileNeighborInfo m_neighborInfo;
             
-            public TerrainTile(int x, int y, TerrainChunk chunk)
+            public TerrainTile(int localX, int localY, int x, int y, TerrainChunk chunk)
             {
                 //Properties
                 m_properties = new Properties("terrainTiles");
@@ -32,11 +33,12 @@ namespace EndlessExpedition
 
                 //Constructor values
                 m_chunk = chunk;
-                this.x = x; this.y = y;
+                m_x = x; m_y = y;
+                m_LX = localX;
+                m_LY = localY;
 
-                //Misc
                 m_neighborInfo = new TerrainTileNeighborInfo();
-                m_neighborInfo.identity = identity;
+                m_neighborInfo.tile = this;
             }
 
             public void OnStart()
@@ -55,10 +57,10 @@ namespace EndlessExpedition
 
             }
 
-            //MouseEvnets
+            //MouseEvents
             public void OnMouseEnter()
             {
-                //Draw the tile's properties to the inspector
+
             }
 
             public void OnMouseOver()
@@ -100,8 +102,40 @@ namespace EndlessExpedition
             {
                 get
                 {
-                    return new Vector2((x + m_chunk.x * TerrainChunk.SIZE) + 0.5f - TerrainChunk.SIZE / 2, 
-                                       (y + m_chunk.y * TerrainChunk.SIZE) + 0.5f - TerrainChunk.SIZE / 2);
+                    return new Vector2((m_LX + m_chunk.x * TerrainChunk.SIZE) + 0.5f - TerrainChunk.SIZE / 2,
+                                       (m_LY + m_chunk.y * TerrainChunk.SIZE) + 0.5f - TerrainChunk.SIZE / 2);
+                }
+            }
+
+            public int localX
+            {
+                get
+                {
+                    return m_LX;
+                }
+            }
+
+            public int localY
+            {
+                get
+                {
+                    return m_LY;
+                }
+            }
+
+            public int x
+            {
+                get
+                {
+                    return m_x;
+                }
+            }
+
+            public int y
+            {
+                get
+                {
+                    return m_y;
                 }
             }
 
@@ -110,7 +144,6 @@ namespace EndlessExpedition
             {
                 m_properties.SetAll(tile.properties.GetAll());
                 m_chunk.AddTileToDrawQueue(this);
-                m_neighborInfo.identity = identity;
             }
         }
     }

@@ -47,7 +47,6 @@ namespace EndlessExpedition
                 else
                     LoadTerrain();
 
-                GenerateNeighborInfo();
             }
 
             private void BuildTerrain()
@@ -87,9 +86,11 @@ namespace EndlessExpedition
                         {
                             for (int tY = 0; tY < TerrainChunk.SIZE; tY++)
                             {
-
                                 //Set the Tile info and start it
-                                TerrainTile tile = m_terrainTiles[cX * TerrainChunk.SIZE + tX, cY * TerrainChunk.SIZE + tY] = new TerrainTile(tX, tY, m_terrainChunks[cX, cY]);
+                                TerrainTile tile = m_terrainTiles[cX * TerrainChunk.SIZE + tX, cY * TerrainChunk.SIZE + tY] = new TerrainTile(tX, tY,
+                                                                                                                                              cX * TerrainChunk.SIZE + tX, 
+                                                                                                                                              cY * TerrainChunk.SIZE + tY, 
+                                                                                                                                              m_terrainChunks[cX, cY]);
                                 tile.properties.SetAll(voidTile.properties);
                                 tile.OnStart();
 
@@ -119,21 +120,6 @@ namespace EndlessExpedition
 
                 m_terrainInfo = new TerrainGenerationTerrainInfo(m_worldInfo);
                 m_terrainInfo.LoadTerrain(m_terrainTiles);
-            }
-
-            private void GenerateNeighborInfo()
-            {
-                //Now that all the tiles have been created, its tile to set its neighbor info
-                for (int x = 0; x < TerrainManager.WORLD_WIDTH * TerrainChunk.SIZE; x++)
-                {
-                    for (int y = 0; y < TerrainManager.WORLD_WIDTH * TerrainChunk.SIZE; y++)
-                    {
-                        TerrainTile tile = m_terrainTiles[x, y];
-                        tile.neighborInfo.identity = tile.identity;
-                        tile.neighborInfo.x = x;
-                        tile.neighborInfo.y = y;
-                    }
-                }
             }
 
             public void SetWorldProperties(Properties properties)
@@ -195,6 +181,7 @@ namespace EndlessExpedition
 
                     //Create the cache and assign its data
                     TerrainTileCache tile = new TerrainTileCache();
+                    tile.loadID = i;
                     tile.properties.SetAll(p);
                     tile.graphics = graphics;
 
@@ -242,7 +229,7 @@ namespace EndlessExpedition
                 //check for cached version
                 for (int i = 0; i < m_tileGraphicsCache.Count; i++)
                 {
-                    if (m_tileGraphicsCache[i].identity == tile.identity)
+                    if (m_tileGraphicsCache[i].IsAs(tile.neighborInfo))
                     {
                         return m_tileGraphicsCache[i].textureData;
                     }
@@ -370,6 +357,40 @@ namespace EndlessExpedition
                     return false;
                 }
                 return false;
+            }
+
+            [ConsoleCommand("Print all the properties used for the terrain generation")]
+            public static void CMDWorldInfo()
+            {
+                Properties p = ManagerInstance.Get<TerrainManager>().worldProperties;
+                for (int i = 0; i < p.GetAll().Count; i++)
+                {
+                    CMD.Log(p.GetAll()[i].Key + " = " + p.GetAll()[i].Value);
+                }
+            }
+
+            [ConsoleCommand("List tile identity of all loaded tiles (NOTE: not instantiated tiles)")]
+            public static void CMDListTileCache()
+            {
+                TerrainTileCache[] tiles = ManagerInstance.Get<TerrainManager>().m_tileCache.ToArray();
+                for (int i = 0; i < tiles.Length; i++)
+                {
+                    CMD.Log(tiles[i].properties.Get<string>("identity"));
+                }
+            }
+
+            [ConsoleCommand("Log all properties of given tile")]
+            public static void CMDInspectCachedTile(string identity)
+            {
+                TerrainTileCache tile = ManagerInstance.Get<TerrainManager>().FindTerrainTileCache(identity.Trim());
+                if(tile != null)
+                {
+                    tile.properties.LogAll();
+                }
+                else
+                {
+                    CMD.Warning("Tile not found!: " + identity);
+                }
             }
         }
     }

@@ -12,7 +12,7 @@ namespace EndlessExpedition
             {
                 private float m_startTime;
                 private float m_journeyLength;
-                private float m_speed = 5.5f;
+                private float m_speed = 50.5f;
                 private Vector3 m_startMarker;
                 private Vector3 m_destinationMarker;
                 private float m_particleLifeTime;
@@ -28,11 +28,11 @@ namespace EndlessExpedition
                 {
                     m_startTime = Time.time;
                     m_destinationMarker = entity.gameObject.transform.position;
-                    m_startMarker = entity.gameObject.transform.position - new Vector3(0, 0, 25);
+                    m_startMarker = entity.gameObject.transform.position - new Vector3(0, 0, 100f);
                     m_journeyLength = Vector3.Distance(m_startMarker, m_destinationMarker);
 
                     entity.gameObject.transform.Translate(new Vector3(0, 0, -25));
-                        entity.positionStatus = EntityPositionStatus.InAir;
+                    entity.gameObject.GetComponent<Renderer>().sortingOrder += 50;
                 }
 
                 public override void OnTick(Entity entity)
@@ -60,8 +60,9 @@ namespace EndlessExpedition
                                 entity.gameObject.transform.position,
                                 Quaternion.identity) as GameObject;
                             m_particleLifeTime = m_particleObject.GetComponent<ParticleSystem>().duration + Time.time;
-                            m_particleObject.layer = Entity.LAYER_ON_GROUND;
-                            entity.positionStatus = EntityPositionStatus.OnGround;
+                            m_particleObject.layer = ManagerInstance.Get<EntityManager>().LayerForEntityType(entity.properties.Get<string>("type"));
+                            entity.gameObject.GetComponent<Renderer>().sortingOrder -= 50;
+                            (entity as Building).OnBuild();
                         }
                         if (Time.time > m_particleLifeTime)
                         {

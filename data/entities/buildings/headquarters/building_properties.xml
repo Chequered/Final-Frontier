@@ -17,7 +17,11 @@
     <Value xsi:type="xsd:int">1</Value>
   </Property>
   <Property>
-    <Key>buildingModules</Key>
-    <Value xsi:type="xsd:string">SkybotModule</Value>
+    <Key>spawnOnBuild</Key>
+    <Value xsi:type="xsd:string">Actor:skybotTransportSmall/Actor:skybotBuilderSmall</Value>
+  </Property>
+  <Property>
+    <Key>itemContainerSlots</Key>
+    <Value xsi:type="xsd:int">30</Value>
   </Property>
 </ArrayOfProperty>

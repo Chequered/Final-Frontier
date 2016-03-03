@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<ArrayOfProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Property>
+    <Key>type</Key>
+    <Value xsi:type="xsd:string">prop</Value>
+  </Property>
+  <Property>
+    <Key>identity</Key>
+    <Value xsi:type="xsd:string">lunar_rock</Value>
+  </Property>
+  <Property>
+    <Key>displayName</Key>
+    <Value xsi:type="xsd:string">Lunar Rock</Value>
+  </Property>
+  <Property>
+    <Key>description</Key>
+    <Value xsi:type="xsd:string">Basic rock that you can find on most planets.</Value>
+  </Property>
+  <Property>
+    <Key>traversable</Key>
+    <Value xsi:type="xsd:boolean">true</Value>
+  </Property>
+  <Property>
+    <Key>movementMode</Key>
+    <Value xsi:type="xsd:string">static</Value>
+  </Property>
+  <Property>
+    <Key>spriteVariants</Key>
+    <Value xsi:type="xsd:int">2</Value>
+  </Property>
+  <Property>
+    <Key>propType</Key>
+    <Value xsi:type="xsd:string">flora</Value>
+  </Property>
+  <Property>
+    <Key>planetType</Key>
+    <Value xsi:type="xsd:string">any</Value>
+  </Property>
+  <Property>
+    <Key>minPerlinValue</Key>
+    <Value xsi:type="xsd:float">0.68</Value>
+  </Property>
+  <Property>
+    <Key>maxPerlinValue</Key>
+    <Value xsi:type="xsd:float">0.74</Value>
+  </Property>
+  <Property>
+    <Key>tileWidth</Key>
+    <Value xsi:type="xsd:int">1</Value>
+  </Property>
+  <Property>
+    <Key>tileHeight</Key>
+    <Value xsi:type="xsd:int">1</Value>
+  </Property>
+</ArrayOfProperty>
